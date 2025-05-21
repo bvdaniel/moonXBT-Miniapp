@@ -3,6 +3,8 @@ import {
   sendNotificationResponseSchema,
 } from "@farcaster/frame-sdk";
 import { getUserNotificationDetails } from "~/lib/kv";
+import { kv } from './kv';
+import { neynar } from './neynar';
 
 const appUrl = process.env.NEXT_PUBLIC_URL || "";
 
@@ -61,5 +63,55 @@ export async function sendFrameNotification({
   } else {
     // Error response
     return { state: "error", error: responseJson };
+  }
+}
+
+export type NotificationToken = {
+  token: string;
+  url: string;
+};
+
+export async function saveNotificationToken(fid: number, token: NotificationToken) {
+  await kv.set(`notification_token:${fid}`, token);
+}
+
+export async function getNotificationToken(fid: number): Promise<NotificationToken | null> {
+  return await kv.get(`notification_token:${fid}`);
+}
+
+export async function removeNotificationToken(fid: number) {
+  await kv.del(`notification_token:${fid}`);
+}
+
+export async function sendNotification(fid: number, notification: {
+  notificationId: string;
+  title: string;
+  body: string;
+  targetUrl: string;
+}) {
+  const token = await getNotificationToken(fid);
+  if (!token) return null;
+
+  try {
+    const response = await fetch(token.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...notification,
+        tokens: [token.token],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send notification: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    return null;
   }
 }

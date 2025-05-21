@@ -1,12 +1,13 @@
-import { AuthOptions, getServerSession } from "next-auth"
+import { NextAuthOptions, getServerSession } from 'next-auth';
 import CredentialsProvider from "next-auth/providers/credentials";
 import { createAppClient, viemConnector } from "@farcaster/auth-client";
 
 declare module "next-auth" {
   interface Session {
-    user: {
-      fid: number;
-    };
+    fid?: number;
+  }
+  interface User {
+    fid: number;
   }
 }
 
@@ -25,105 +26,62 @@ function getDomainFromUrl(urlString: string | undefined): string {
   }
 }
 
-export const authOptions: AuthOptions = {
-    // Configure one or more authentication providers
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: "Sign in with Farcaster",
+      name: "Farcaster",
       credentials: {
-        message: {
-          label: "Message",
-          type: "text",
-          placeholder: "0x0",
-        },
-        signature: {
-          label: "Signature",
-          type: "text",
-          placeholder: "0x0",
-        },
-        // In a production app with a server, these should be fetched from
-        // your Farcaster data indexer rather than have them accepted as part
-        // of credentials.
-        // question: should these natively use the Neynar API?
-        name: {
-          label: "Name",
-          type: "text",
-          placeholder: "0x0",
-        },
-        pfp: {
-          label: "Pfp",
-          type: "text",
-          placeholder: "0x0",
-        },
+        message: { label: "Message", type: "text" },
+        signature: { label: "Signature", type: "text" },
+        nonce: { label: "Nonce", type: "text" },
       },
-      async authorize(credentials, req) {
-        const csrfToken = req?.body?.csrfToken;
-        if (!csrfToken) {
-          console.error('CSRF token is missing from request');
+      async authorize(credentials) {
+        if (!credentials?.message || !credentials?.signature || !credentials?.nonce) {
           return null;
         }
 
-        const appClient = createAppClient({
-          ethereum: viemConnector(),
-        });
+        try {
+          const client = createAppClient({
+            relay: "https://relay.farcaster.xyz",
+            ethereum: viemConnector(),
+          });
 
-        const domain = getDomainFromUrl(process.env.NEXTAUTH_URL);
+          const verifyResponse = await client.verifySignInMessage({
+            message: credentials.message,
+            signature: credentials.signature as `0x${string}`,
+            nonce: credentials.nonce,
+            domain: process.env.NEXT_PUBLIC_URL || 'localhost:3000',
+          });
 
-        const verifyResponse = await appClient.verifySignInMessage({
-          message: credentials?.message as string,
-          signature: credentials?.signature as `0x${string}`,
-          domain,
-          nonce: csrfToken,
-        });
-        const { success, fid } = verifyResponse;
+          if (!verifyResponse.success) {
+            return null;
+          }
 
-        if (!success) {
+          return {
+            id: verifyResponse.fid.toString(),
+            fid: verifyResponse.fid,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
           return null;
         }
-
-        return {
-          id: fid.toString(),
-        };
       },
     }),
   ],
   callbacks: {
-    session: async ({ session, token }) => {
-      if (session?.user) {
-        session.user.fid = parseInt(token.sub ?? '');
+    async session({ session, token }) {
+      if (token.sub) {
+        session.fid = parseInt(token.sub);
       }
       return session;
     },
   },
-  cookies: {
-    sessionToken: {
-      name: `next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "none",
-        path: "/",
-        secure: true
-      }
-    },
-    callbackUrl: {
-      name: `next-auth.callback-url`,
-      options: {
-        sameSite: "none",
-        path: "/",
-        secure: true
-      }
-    },
-    csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "none",
-        path: "/",
-        secure: true
-      }
-    }
-  }
-}
+  pages: {
+    signIn: '/auth/signin',
+  },
+};
+
+export { getServerSession };
 
 export const getSession = async () => {
   try {

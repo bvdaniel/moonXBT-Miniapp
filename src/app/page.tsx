@@ -44,30 +44,6 @@ export default function Home() {
     }
   }, [tokenBalance]);
 
-  const handleFollowFarcaster = () => {
-    window.open('https://warpcast.com/ai420z', '_blank');
-  };
-
-  const handleFollowX = () => {
-    window.open('https://x.com/moonXBT_ai', '_blank');
-  };
-
-  const handleFollowTikTok = () => {
-    window.open('https://www.tiktok.com/@moonxbt.fun', '_blank');
-  };
-
-  const handleFollowInstagram = () => {
-    window.open('https://www.instagram.com/moonxbt_ai/', '_blank');
-  };
-
-  const handleFollowZora = () => {
-    window.open('https://zora.co/@moonxbt', '_blank');
-  };
-
-  const handleJoinTelegram = () => {
-    window.open('https://t.me/A0X_Portal', '_blank');
-  };
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="max-w-md w-full space-y-6">
@@ -85,42 +61,42 @@ export default function Home() {
 
         <div className="space-y-4">
           <Button 
-            onClick={handleFollowFarcaster}
+            onClick={() => window.open('https://warpcast.com/ai420z', '_blank')}
             className="w-full bg-purple-600 hover:bg-purple-700"
           >
             Follow on Farcaster
           </Button>
 
           <Button 
-            onClick={handleFollowX}
+            onClick={() => window.open('https://x.com/moonXBT_ai', '_blank')}
             className="w-full bg-black hover:bg-gray-900 border border-gray-700"
           >
             Follow on X
           </Button>
 
           <Button 
-            onClick={handleFollowTikTok}
+            onClick={() => window.open('https://www.tiktok.com/@moonxbt.fun', '_blank')}
             className="w-full bg-black hover:bg-gray-900 border border-gray-700"
           >
             Follow on TikTok
           </Button>
 
           <Button 
-            onClick={handleFollowInstagram}
+            onClick={() => window.open('https://www.instagram.com/moonxbt_ai/', '_blank')}
             className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:opacity-90"
           >
             Follow on Instagram
           </Button>
 
           <Button 
-            onClick={handleFollowZora}
+            onClick={() => window.open('https://zora.co/@moonxbt', '_blank')}
             className="w-full bg-black hover:bg-gray-900 border border-gray-700"
           >
             Follow on Zora
           </Button>
 
           <Button 
-            onClick={handleJoinTelegram}
+            onClick={() => window.open('https://t.me/A0X_Portal', '_blank')}
             className="w-full bg-[#0088cc] hover:bg-[#0077b3]"
           >
             Join Telegram Group

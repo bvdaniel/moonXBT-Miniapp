@@ -1,25 +1,28 @@
-import type { Metadata } from "next";
+"use client";
 
-import { getSession } from "~/auth"
-import "~/app/globals.css";
-import { Providers } from "~/app/providers";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { sdk } from "@farcaster/frame-sdk";
+import { WagmiProvider } from 'wagmi';
+import { config } from '@/config/wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_FRAME_NAME || "Frames v2 Demo",
-  description: process.env.NEXT_PUBLIC_FRAME_DESCRIPTION || "A Farcaster Frames v2 demo app",
-};
+const inter = Inter({ subsets: ["latin"] });
+const queryClient = new QueryClient();
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {  
-  const session = await getSession()
-
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
-      <body>
-        <Providers session={session}>{children}</Providers>
+      <body className={inter.className}>
+        <QueryClientProvider client={queryClient}>
+          <WagmiProvider config={config}>
+            {children}
+          </WagmiProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );

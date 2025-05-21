@@ -1,0 +1,19 @@
+{
+    "accountAssociation": {
+      "header": "PLACEHOLDER_HEADER",
+      "payload": "PLACEHOLDER_PAYLOAD",
+      "signature": "PLACEHOLDER_SIGNATURE"
+    },
+    "frame": {
+      "version": "1",
+      "name": "MoonXBT Social",
+      "iconUrl": "https://moonxbt.com/logo.png",
+      "homeUrl": "https://moonxbt.com",
+      "splashImageUrl": "https://moonxbt.com/logo.png",
+      "splashBackgroundColor": "#000000",
+      "subtitle": "Follow MoonXBT on social media",
+      "description": "Connect with MoonXBT across all social platforms and check your $A0X holdings",
+      "primaryCategory": "social",
+      "tags": ["social", "crypto", "community"]
+    }
+  }

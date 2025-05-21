@@ -11,21 +11,6 @@ declare module "next-auth" {
   }
 }
 
-function getDomainFromUrl(urlString: string | undefined): string {
-  if (!urlString) {
-    console.warn('NEXTAUTH_URL is not set, using localhost:3000 as fallback');
-    return 'localhost:3000';
-  }
-  try {
-    const url = new URL(urlString);
-    return url.hostname;
-  } catch (error) {
-    console.error('Invalid NEXTAUTH_URL:', urlString, error);
-    console.warn('Using localhost:3000 as fallback');
-    return 'localhost:3000';
-  }
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({

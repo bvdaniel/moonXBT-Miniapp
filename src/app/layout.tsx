@@ -2,7 +2,6 @@
 
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { sdk } from "@farcaster/frame-sdk";
 import { WagmiProvider } from 'wagmi';
 import { config } from '@/config/wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

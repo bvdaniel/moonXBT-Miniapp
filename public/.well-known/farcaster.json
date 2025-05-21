@@ -6,14 +6,19 @@
     },
     "frame": {
       "version": "1",
-      "name": "MoonXBT Social",
+      "name": "MoonXBT",
       "iconUrl": "https://moonxbt.com/logo.png",
       "homeUrl": "https://moonxbt.com",
       "splashImageUrl": "https://moonxbt.com/logo.png",
       "splashBackgroundColor": "#000000",
       "subtitle": "Follow MoonXBT on social media",
-      "description": "Connect with MoonXBT across all social platforms and check your $A0X holdings",
+      "description": "Connect with MoonXBT across all social platforms and check your $A0X token balance",
       "primaryCategory": "social",
-      "tags": ["social", "crypto", "community"]
+      "tags": ["social", "crypto", "trading"],
+      "heroImageUrl": "https://moonxbt.com/hero.png",
+      "tagline": "Join the MoonXBT community",
+      "ogTitle": "MoonXBT Social Hub",
+      "ogDescription": "Connect with MoonXBT and check your $A0X balance",
+      "ogImageUrl": "https://moonxbt.com/og-image.png"
     }
   }

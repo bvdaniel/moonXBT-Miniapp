@@ -259,7 +259,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  debug: false, // Desactivar debug en producción
+  debug: true, // Desactivar debug en producción
 };
 
 export { getServerSession };

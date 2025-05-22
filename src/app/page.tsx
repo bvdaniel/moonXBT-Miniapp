@@ -11,15 +11,15 @@ import {
   Play,
   Send,
   Twitter,
-  Wallet,
-  Coins,
 } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { formatEther } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
-// A0X Token Contract ABI
+import Image from "next/image";
+
+// A0X Token Contract ABI - only the balanceOf function
 const tokenABI = [
   {
     inputs: [{ name: "account", type: "address" }],
@@ -410,7 +410,7 @@ export default function UpdatedAirdropComponent() {
                     task.socialNetwork as "farcaster" | "twitter"
                   )
                 }
-                className="bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1"
+                className="bg-blue-600 hover:bg-blue-700 text-sm px-3 py-1 text-white"
                 disabled={sessionStatus === "loading" || isVerifyingAll}
               >
                 {sessionStatus === "loading" ? (
@@ -425,7 +425,7 @@ export default function UpdatedAirdropComponent() {
               {task.url && (
                 <Button
                   onClick={() => handleExternalLink(task.url!)}
-                  className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1"
+                  className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1 text-white"
                   title={`Ir a ${task.socialNetwork}`}
                 >
                   <ExternalLink className="w-3 h-3" />
@@ -481,7 +481,7 @@ export default function UpdatedAirdropComponent() {
         <div className="flex items-center space-x-2">
           <Button
             onClick={() => handleExternalLink(task.url!)}
-            className="bg-gray-600 hover:bg-gray-700 text-sm px-3 py-1"
+            className="bg-gray-600 hover:bg-gray-700 text-sm px-3 py-1 text-white"
           >
             Open Link <ExternalLink className="w-3 h-3 ml-1" />
           </Button>
@@ -566,18 +566,51 @@ export default function UpdatedAirdropComponent() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="max-w-lg w-full space-y-6 bg-gray-800/50 backdrop-blur-md p-6 rounded-xl shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-            MoonXBT Airdrop
-          </h1>
-          <p className="text-gray-300">
-            Complete tasks to become eligible for the airdrop!
-          </p>
+        {/* Animated background gradients */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 animate-gradient" />
+        <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20" />
+
+        {/* Neon glow effects */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500/30 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 container mx-auto px-4 py-4 flex flex-col items-center justify-center">
+          <div className="max-w-xl w-full space-y-8">
+            {/* Header with anime character */}
+            <div className="text-center relative">
+              <Image
+                src="/moonxbt-mascot.png"
+                alt="MoonXBT Mascot"
+                width={120}
+                height={120}
+                className="mx-auto mb-4"
+              />
+              <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                MoonXBT Airdrop
+              </h1>
+              <p className="text-blue-200/80">
+                Complete tasks to earn your airdrop!
+              </p>
+            </div>
+
+            {/* Balance card with neon effect */}
+            {isConnected && balance !== null && (
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000"></div>
+                <div className="relative bg-[#0F1729] rounded-lg p-6 text-center">
+                  <p className="text-blue-300">Your $A0X Balance</p>
+                  <p className="text-3xl font-bold text-white">
+                    {Number(balance).toLocaleString()} A0X
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Wallet & Session Status */}
         <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
-          <div className="flex justify-between items-center">
+          {/* <div className="flex justify-between items-center">
             <span className="text-gray-300 flex items-center">
               <Wallet className="w-4 h-4 mr-2" />
               Wallet:
@@ -606,93 +639,95 @@ export default function UpdatedAirdropComponent() {
                 </Button>
               )}
             </div>
-          </div>
 
-          {isConnected && (
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300 flex items-center">
-                <Coins className="w-4 h-4 mr-2" />
-                A0X Balance:
-              </span>
-              {isLoadingTokenBalance ? (
-                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-              ) : (
-                <span
-                  className={`text-sm font-semibold ${
-                    balance !== null && Number(balance) >= MIN_A0X_REQUIRED
-                      ? "text-yellow-400"
-                      : balance !== null
-                      ? "text-orange-400"
-                      : "text-gray-500"
-                  }`}
-                >
-                  {balance !== null
-                    ? `${Number(balance).toLocaleString()} A0X`
-                    : tokenBalanceError
-                    ? "Error"
-                    : "Loading..."}
+            {isConnected && (
+              <div className="flex justify-between items-center">
+                <span className="text-gray-300 flex items-center">
+                  <Coins className="w-4 h-4 mr-2" />
+                  A0X Balance:
                 </span>
-              )}
-            </div>
-          )}
-
-          {sessionStatus === "authenticated" && session && (
-            <div className="border-t border-gray-600 pt-3 mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-              {session.fid && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-purple-400 flex items-center">
-                    <MessageCircle size={14} className="mr-1" /> Farcaster ✓
-                  </span>
-                  <Button
-                    onClick={() =>
-                      window.open(`https://warpcast.com/ai420z`, "_blank")
-                    }
-                    className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1"
+                {isLoadingTokenBalance ? (
+                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                ) : (
+                  <span
+                    className={`text-sm font-semibold ${
+                      balance !== null && Number(balance) >= MIN_A0X_REQUIRED
+                        ? "text-yellow-400"
+                        : balance !== null
+                        ? "text-orange-400"
+                        : "text-gray-500"
+                    }`}
                   >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
-              {session.twitterHandle && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-blue-400 flex items-center">
-                    <Twitter size={14} className="mr-1" /> X (Twitter) ✓
+                    {balance !== null
+                      ? `${Number(balance).toLocaleString()} A0X`
+                      : tokenBalanceError
+                      ? "Error"
+                      : "Loading..."}
                   </span>
-                  <Button
-                    onClick={() =>
-                      window.open(`https://x.com/moonXBT_ai`, "_blank")
-                    }
-                    className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          )}
-          {sessionStatus === "authenticated" && (
-            <Button
-              onClick={() => signOut({ callbackUrl: window.location.pathname })}
-              className="w-full mt-2 bg-red-700/70 hover:bg-red-600 text-xs py-1"
-            >
-              Sign Out
-            </Button>
-          )}
-        </div>
+                )}
+              </div>
+            )}
 
-        {/* Task Sections */}
-        {["Required", "Optional"].map((type) => {
-          const taskList = type === "Required" ? requiredTasks : optionalTasks;
-          if (taskList.length === 0) return null;
-          return (
-            <div key={type} className="space-y-3">
-              <h2 className="text-xl font-semibold text-gray-100 border-b border-gray-700 pb-2 mb-3">
-                {type} Tasks
-              </h2>
-              {taskList.map((task) => (
-                <div
-                  key={task.id}
-                  className={`bg-gray-700/60 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0
+            {sessionStatus === "authenticated" && session && (
+              <div className="border-t border-gray-600 pt-3 mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+                {session.fid && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-purple-400 flex items-center">
+                      <MessageCircle size={14} className="mr-1" /> Farcaster ✓
+                    </span>
+                    <Button
+                      onClick={() =>
+                        window.open(`https://warpcast.com/ai420z`, "_blank")
+                      }
+                      className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+                {session.twitterHandle && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-400 flex items-center">
+                      <Twitter size={14} className="mr-1" /> X (Twitter) ✓
+                    </span>
+                    <Button
+                      onClick={() =>
+                        window.open(`https://x.com/moonXBT_ai`, "_blank")
+                      }
+                      className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+            {sessionStatus === "authenticated" && (
+              <Button
+                onClick={() =>
+                  signOut({ callbackUrl: window.location.pathname })
+                }
+                className="w-full mt-2 bg-red-700/70 hover:bg-red-600 text-xs py-1"
+              >
+                Sign Out
+              </Button>
+            )}
+          </div> */}
+
+          {/* Task Sections */}
+          {["Required", "Optional"].map((type) => {
+            const taskList =
+              type === "Required" ? requiredTasks : optionalTasks;
+            if (taskList.length === 0) return null;
+            return (
+              <div key={type} className="space-y-3">
+                <h2 className="text-xl font-semibold text-gray-100 border-b border-gray-700 pb-2 mb-3">
+                  {type} Tasks
+                </h2>
+                {taskList.map((task) => (
+                  <div
+                    key={task.id}
+                    className={`bg-gray-700/60 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0
                               ${
                                 task.isCompleted
                                   ? "border-l-4 border-green-500"
@@ -700,91 +735,94 @@ export default function UpdatedAirdropComponent() {
                                   ? "border-l-4 border-red-500"
                                   : "border-l-4 border-gray-600"
                               }`}
-                >
-                  <div className="flex items-start space-x-3">
-                    <span className="mt-1">{task.icon}</span>
-                    <div>
-                      <h3 className="font-medium text-gray-50">{task.title}</h3>
-                      <p className="text-xs text-gray-400">
-                        {task.description}
-                      </p>
+                  >
+                    <div className="flex items-start space-x-3">
+                      <span className="mt-1">{task.icon}</span>
+                      <div>
+                        <h3 className="font-medium text-gray-50">
+                          {task.title}
+                        </h3>
+                        <p className="text-xs text-gray-400">
+                          {task.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="sm:min-w-[180px] sm:text-right">
+                      {" "}
+                      {/* Ensure button area has enough space */}
+                      {renderTaskButton(task)}
                     </div>
                   </div>
-                  <div className="sm:min-w-[180px] sm:text-right">
-                    {" "}
-                    {/* Ensure button area has enough space */}
-                    {renderTaskButton(task)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })}
+                ))}
+              </div>
+            );
+          })}
 
-        {/* Refresh Button - solo mostrar si hay tareas que necesiten auth y sesión o wallet */}
-        {(tasks.some((t) => t.needsAuth) ||
-          tasks.some((t) => t.id === "hold-a0x")) &&
-          refreshButton}
+          {/* Refresh Button - solo mostrar si hay tareas que necesiten auth y sesión o wallet */}
+          {(tasks.some((t) => t.needsAuth) ||
+            tasks.some((t) => t.id === "hold-a0x")) &&
+            refreshButton}
 
-        {/* Eligibility & Claim */}
-        <div
-          className={`rounded-lg p-4 text-center border-2 ${
-            allRequiredCompleted
-              ? "bg-green-900/30 border-green-500"
-              : isConnected && sessionStatus === "authenticated"
-              ? "bg-yellow-900/30 border-yellow-500"
-              : "bg-gray-700/30 border-gray-500"
-          }`}
-        >
-          <h2 className="text-lg font-bold mb-2">
-            {allRequiredCompleted
-              ? "🎉 You are Eligible for the Airdrop!"
-              : isConnected && sessionStatus === "authenticated"
-              ? "Almost there!"
-              : "Connect and Sign In to Check Eligibility"}
-          </h2>
-          <p className="text-sm text-gray-300 mb-3">
-            {isConnected && sessionStatus === "authenticated"
-              ? `${completedRequiredTasksCount} / ${requiredTasks.length} required tasks completed.`
-              : "Please connect your wallet and sign in with your social accounts."}
-          </p>
-
-          {allRequiredCompleted && (
-            <Button
-              onClick={handleClaimAirdrop}
-              disabled={isClaiming}
-              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105"
-            >
-              {isClaiming ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Claiming...
-                </>
-              ) : (
-                "Claim Your Airdrop Now!"
-              )}
-            </Button>
-          )}
-          {claimMessage && (
-            <p
-              className={`mt-3 text-sm ${
-                claimMessage.includes("Error") ||
-                claimMessage.includes("Failed")
-                  ? "text-red-400"
-                  : "text-green-400"
-              }`}
-            >
-              {claimMessage}
+          {/* Eligibility & Claim */}
+          <div
+            className={`rounded-lg p-4 text-center border-2 ${
+              allRequiredCompleted
+                ? "bg-green-900/30 border-green-500"
+                : isConnected && sessionStatus === "authenticated"
+                ? "bg-yellow-900/30 border-yellow-500"
+                : "bg-gray-700/30 border-gray-500"
+            }`}
+          >
+            <h2 className="text-lg font-bold mb-2">
+              {allRequiredCompleted
+                ? "🎉 You are Eligible for the Airdrop!"
+                : isConnected && sessionStatus === "authenticated"
+                ? "Almost there!"
+                : "Connect and Sign In to Check Eligibility"}
+            </h2>
+            <p className="text-sm text-gray-300 mb-3">
+              {isConnected && sessionStatus === "authenticated"
+                ? `${completedRequiredTasksCount} / ${requiredTasks.length} required tasks completed.`
+                : "Please connect your wallet and sign in with your social accounts."}
             </p>
-          )}
-          {!allRequiredCompleted &&
-            isConnected &&
-            sessionStatus === "authenticated" &&
-            requiredTasks.length > 0 && (
-              <p className="text-xs text-yellow-300 mt-2">
-                Complete all required tasks above to enable the claim button.
+
+            {allRequiredCompleted && (
+              <Button
+                onClick={handleClaimAirdrop}
+                disabled={isClaiming}
+                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105"
+              >
+                {isClaiming ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Claiming...
+                  </>
+                ) : (
+                  "Claim Your Airdrop Now!"
+                )}
+              </Button>
+            )}
+            {claimMessage && (
+              <p
+                className={`mt-3 text-sm ${
+                  claimMessage.includes("Error") ||
+                  claimMessage.includes("Failed")
+                    ? "text-red-400"
+                    : "text-green-400"
+                }`}
+              >
+                {claimMessage}
               </p>
             )}
+            {!allRequiredCompleted &&
+              isConnected &&
+              sessionStatus === "authenticated" &&
+              requiredTasks.length > 0 && (
+                <p className="text-xs text-yellow-300 mt-2">
+                  Complete all required tasks above to enable the claim button.
+                </p>
+              )}
+          </div>
         </div>
       </div>
     </main>

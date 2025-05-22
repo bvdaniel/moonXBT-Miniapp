@@ -223,14 +223,6 @@ export default function UpdatedAirdropComponent() {
     }
   }, [tokenBalanceData, tokenBalanceError, address]);
 
-  // Verificar todas las tareas cuando cambie la sesión, la wallet o el balance
-  // Solo si hay sesión, wallet conectada y balance disponible
-  useEffect(() => {
-    if (sessionStatus === "authenticated" && address && balance !== null) {
-      verifyAllTasks();
-    }
-  }, [sessionStatus, address, balance]); // `session` object itself can cause too many re-renders if not careful
-
   const verifyAllTasks = async () => {
     if (!address || balance === null || sessionStatus !== "authenticated") {
       // No verificar si no hay wallet, balance o sesión
@@ -547,10 +539,6 @@ export default function UpdatedAirdropComponent() {
   const completedOptionalTasks = optionalTasks.filter(
     (task) => task.isCompleted
   ).length;
-  const allRequiredCompleted =
-    isConnected &&
-    sessionStatus === "authenticated" &&
-    completedRequiredTasks === requiredTasks.length;
 
   useEffect(() => {
     setAsciiLinesToShow(0);
@@ -563,7 +551,50 @@ export default function UpdatedAirdropComponent() {
     return () => clearInterval(interval);
   }, []);
 
-  // Restore the refreshButton definition from the main repo:
+  // Restore all variables and functions from the main repo:
+  const allRequiredCompleted =
+    isConnected &&
+    sessionStatus === "authenticated" &&
+    completedRequiredTasks === requiredTasks.length;
+
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
+
+  const handleClaimAirdrop = async () => {
+    if (!allRequiredCompleted) {
+      setClaimMessage("Please complete all required tasks first.");
+      return;
+    }
+    setIsClaiming(true);
+    setClaimMessage(null);
+    // Aquí iría la lógica para llamar a tu backend y registrar el claim
+    // Por ejemplo:
+    // try {
+    //   const response = await fetch('/api/claim-airdrop', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ walletAddress: address })
+    //   });
+    //   const data = await response.json();
+    //   if (response.ok) {
+    //     setClaimMessage(`Airdrop claimed successfully! Transaction: ${data.txHash}`);
+    //   } else {
+    //     setClaimMessage(`Error: ${data.message || 'Failed to claim airdrop.'}`);
+    //   }
+    // } catch (error) {
+    //   setClaimMessage("An error occurred while claiming. Please try again.");
+    // } finally {
+    //   setIsClaiming(false);
+    // }
+
+    // Placeholder:
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setClaimMessage(
+      "Airdrop claim initiated! (This is a demo, no actual claim processed)"
+    );
+    setIsClaiming(false);
+  };
+
   const refreshButton = (
     <Button
       onClick={verifyAllTasks}
@@ -584,6 +615,12 @@ export default function UpdatedAirdropComponent() {
       )}
     </Button>
   );
+
+  useEffect(() => {
+    if (sessionStatus === "authenticated" && address && balance !== null) {
+      verifyAllTasks();
+    }
+  }, [sessionStatus, address, balance, verifyAllTasks]);
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">

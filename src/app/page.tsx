@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { useAccount, useReadContract } from 'wagmi';
 import { formatEther } from 'viem';
 import { CheckCircle2, Circle } from 'lucide-react';
+import Image from 'next/image';
 
 // A0X Token Contract ABI - only the balanceOf function
 const tokenABI = [
@@ -134,85 +135,143 @@ export default function Home() {
   const completedOptionalTasks = optionalTasks.filter(task => task.isCompleted).length;
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
-      <div className="max-w-md w-full space-y-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">MoonXBT Airdrop</h1>
-          <p className="text-gray-400">Complete tasks to earn your airdrop!</p>
-        </div>
+    <main className="min-h-screen bg-[#070B16] text-white relative overflow-hidden">
+      {/* Animated background gradients */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 animate-gradient" />
+      <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20" />
+      
+      {/* Neon glow effects */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500/30 rounded-full blur-[100px] pointer-events-none" />
 
-        {isConnected && balance !== null && (
-          <div className="bg-gray-800 rounded-lg p-4 mb-4 text-center">
-            <p className="text-gray-400">Your $A0X Balance</p>
-            <p className="text-2xl font-bold">{Number(balance).toLocaleString()} A0X</p>
+      <div className="relative z-10 container mx-auto px-4 py-8 min-h-screen flex flex-col items-center justify-center">
+        <div className="max-w-xl w-full space-y-8">
+          {/* Header with anime character */}
+          <div className="text-center relative">
+            <Image
+              src="/moonxbt-mascot.png"
+              alt="MoonXBT Mascot"
+              width={120}
+              height={120}
+              className="mx-auto mb-4"
+            />
+            <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              MoonXBT Airdrop
+            </h1>
+            <p className="text-blue-200/80">Complete tasks to earn your airdrop!</p>
           </div>
-        )}
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Required Tasks</h2>
-            <div className="space-y-3">
-              {requiredTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    {task.isCompleted ? (
-                      <CheckCircle2 className="text-green-500" />
-                    ) : (
-                      <Circle className="text-gray-500" />
-                    )}
-                    <div>
-                      <p className="font-medium">{task.title}</p>
-                      <p className="text-sm text-gray-400">{task.description}</p>
+          {/* Balance card with neon effect */}
+          {isConnected && balance !== null && (
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000"></div>
+              <div className="relative bg-[#0F1729] rounded-lg p-6 text-center">
+                <p className="text-blue-300">Your $A0X Balance</p>
+                <p className="text-3xl font-bold text-white">{Number(balance).toLocaleString()} A0X</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-8">
+            {/* Required Tasks */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+                  Required Tasks
+                </span>
+              </h2>
+              <div className="space-y-4">
+                {requiredTasks.map((task) => (
+                  <div key={task.id} className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                    <div className="relative flex items-center justify-between bg-[#0F1729] p-4 rounded-lg border border-blue-500/20">
+                      <div className="flex items-center space-x-4">
+                        {task.isCompleted ? (
+                          <CheckCircle2 className="text-green-400 w-6 h-6" />
+                        ) : (
+                          <Circle className="text-blue-400/50 w-6 h-6" />
+                        )}
+                        <div>
+                          <p className="font-medium text-blue-100">{task.title}</p>
+                          <p className="text-sm text-blue-300/70">{task.description}</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={task.action}
+                        className={`${
+                          task.isCompleted
+                            ? 'bg-green-500/20 text-green-300'
+                            : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                        } border border-blue-500/30 backdrop-blur-sm transition-all duration-300`}
+                        disabled={task.isCompleted}
+                      >
+                        {task.isCompleted ? 'Completed' : 'Complete'}
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    onClick={task.action}
-                    className="bg-purple-600 hover:bg-purple-700"
-                    disabled={task.isCompleted}
-                  >
-                    {task.isCompleted ? 'Completed' : 'Complete'}
-                  </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <h2 className="text-xl font-semibold mb-3">Bonus Tasks</h2>
-            <div className="space-y-3">
-              {optionalTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    {task.isCompleted ? (
-                      <CheckCircle2 className="text-green-500" />
-                    ) : (
-                      <Circle className="text-gray-500" />
-                    )}
-                    <div>
-                      <p className="font-medium">{task.title}</p>
-                      <p className="text-sm text-gray-400">{task.description}</p>
+            {/* Bonus Tasks */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4">
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">
+                  Bonus Tasks
+                </span>
+              </h2>
+              <div className="space-y-4">
+                {optionalTasks.map((task) => (
+                  <div key={task.id} className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+                    <div className="relative flex items-center justify-between bg-[#0F1729] p-4 rounded-lg border border-purple-500/20">
+                      <div className="flex items-center space-x-4">
+                        {task.isCompleted ? (
+                          <CheckCircle2 className="text-green-400 w-6 h-6" />
+                        ) : (
+                          <Circle className="text-purple-400/50 w-6 h-6" />
+                        )}
+                        <div>
+                          <p className="font-medium text-purple-100">{task.title}</p>
+                          <p className="text-sm text-purple-300/70">{task.description}</p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={task.action}
+                        className={`${
+                          task.isCompleted
+                            ? 'bg-green-500/20 text-green-300'
+                            : 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
+                        } border border-purple-500/30 backdrop-blur-sm transition-all duration-300`}
+                        disabled={task.isCompleted}
+                      >
+                        {task.isCompleted ? 'Completed' : 'Complete'}
+                      </Button>
                     </div>
                   </div>
-                  <Button
-                    onClick={task.action}
-                    className="bg-purple-600 hover:bg-purple-700"
-                    disabled={task.isCompleted}
-                  >
-                    {task.isCompleted ? 'Completed' : 'Complete'}
-                  </Button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="bg-gray-800 rounded-lg p-4 text-center">
-            <p className="text-gray-400">Progress</p>
-            <p className="text-xl font-bold">
-              {completedRequiredTasks}/{requiredTasks.length} Required Tasks
-            </p>
-            <p className="text-xl font-bold">
-              {completedOptionalTasks}/{optionalTasks.length} Bonus Tasks
-            </p>
+            {/* Progress card with glass effect */}
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000"></div>
+              <div className="relative bg-[#0F1729] rounded-lg p-6 text-center backdrop-blur-sm border border-white/10">
+                <p className="text-blue-300 mb-2">Progress</p>
+                <div className="space-y-2">
+                  <p className="text-xl">
+                    <span className="font-bold text-blue-400">{completedRequiredTasks}</span>
+                    <span className="text-blue-300">/{requiredTasks.length}</span>
+                    <span className="text-blue-200/80 ml-2">Required Tasks</span>
+                  </p>
+                  <p className="text-xl">
+                    <span className="font-bold text-purple-400">{completedOptionalTasks}</span>
+                    <span className="text-purple-300">/{optionalTasks.length}</span>
+                    <span className="text-purple-200/80 ml-2">Bonus Tasks</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

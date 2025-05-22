@@ -563,6 +563,28 @@ export default function UpdatedAirdropComponent() {
     return () => clearInterval(interval);
   }, []);
 
+  // Restore the refreshButton definition from the main repo:
+  const refreshButton = (
+    <Button
+      onClick={verifyAllTasks}
+      disabled={
+        isVerifyingAll ||
+        !isConnected ||
+        sessionStatus !== "authenticated" ||
+        balance === null
+      }
+      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700"
+    >
+      {isVerifyingAll ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verifying Tasks...
+        </>
+      ) : (
+        "Refresh All Task Verifications"
+      )}
+    </Button>
+  );
+
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
       {/* Scanline effect */}
@@ -634,6 +656,9 @@ export default function UpdatedAirdropComponent() {
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="w-full flex justify-end">
+              {refreshButton}
             </div>
             <div className="terminal-border bg-[#1752F0] p-4 text-center mt-4">
               <pre className="text-white text-xs mb-2 select-none">

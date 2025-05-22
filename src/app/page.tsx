@@ -567,8 +567,8 @@ export default function UpdatedAirdropComponent() {
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
       <div className="max-w-lg w-full space-y-6 bg-gray-800/50 backdrop-blur-md p-6 rounded-xl shadow-2xl">
         {/* Animated background gradients */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 animate-gradient" />
-        <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 animate-gradient -z-10" />
+        <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20 -z-10" />
 
         {/* Neon glow effects */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[100px] pointer-events-none" />
@@ -609,7 +609,7 @@ export default function UpdatedAirdropComponent() {
         </div>
 
         {/* Wallet & Session Status */}
-        <div className="bg-gray-700/50 rounded-lg p-4 space-y-3">
+        <div className="bg-gray-700/50 rounded-lg p-4 space-y-3 z-10">
           {/* <div className="flex justify-between items-center">
             <span className="text-gray-300 flex items-center">
               <Wallet className="w-4 h-4 mr-2" />

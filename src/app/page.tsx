@@ -5,12 +5,10 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
-  Instagram,
   Loader2,
   MessageCircle,
   Play,
   Send,
-  Twitter,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
@@ -18,9 +16,8 @@ import { formatEther } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
 import Image from "next/image";
-import { FaInstagram, FaTiktok, FaTelegram, FaGlobe } from 'react-icons/fa';
+import { FaInstagram, FaTiktok, FaTelegram } from 'react-icons/fa';
 import { SiFarcaster } from 'react-icons/si';
-import { BsGlobe } from 'react-icons/bs';
 
 // A0X Token Contract ABI - only the balanceOf function
 const tokenABI = [
@@ -80,8 +77,6 @@ export default function UpdatedAirdropComponent() {
   const { address, isConnected } = useAccount(); // connector puede ser útil
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isVerifyingAll, setIsVerifyingAll] = useState(false); // Renombrado para claridad
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
   const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
 
@@ -166,7 +161,7 @@ export default function UpdatedAirdropComponent() {
         isCompleted: false, // Asumimos que no se verifica automáticamente
         needsAuth: false,
         url: "https://www.instagram.com/moonxbt_ai/",
-        icon: <Instagram className="w-5 h-5 text-pink-500" />,
+        icon: <FaInstagram className="w-5 h-5 text-pink-500" />,
         verificationError: null,
       },
       {
@@ -556,63 +551,6 @@ export default function UpdatedAirdropComponent() {
     isConnected &&
     sessionStatus === "authenticated" &&
     completedRequiredTasks === requiredTasks.length;
-
-  const handleClaimAirdrop = async () => {
-    if (!allRequiredCompleted) {
-      setClaimMessage("Please complete all required tasks first.");
-      return;
-    }
-    setIsClaiming(true);
-    setClaimMessage(null);
-    // Aquí iría la lógica para llamar a tu backend y registrar el claim
-    // Por ejemplo:
-    // try {
-    //   const response = await fetch('/api/claim-airdrop', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ walletAddress: address })
-    //   });
-    //   const data = await response.json();
-    //   if (response.ok) {
-    //     setClaimMessage(`Airdrop claimed successfully! Transaction: ${data.txHash}`);
-    //   } else {
-    //     setClaimMessage(`Error: ${data.message || 'Failed to claim airdrop.'}`);
-    //   }
-    // } catch (error) {
-    //   setClaimMessage("An error occurred while claiming. Please try again.");
-    // } finally {
-    //   setIsClaiming(false);
-    // }
-
-    // Placeholder:
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setClaimMessage(
-      "Airdrop claim initiated! (This is a demo, no actual claim processed)"
-    );
-    setIsClaiming(false);
-  };
-
-  // Botón para refrescar verificaciones
-  const refreshButton = (
-    <Button
-      onClick={verifyAllTasks}
-      disabled={
-        isVerifyingAll ||
-        !isConnected ||
-        sessionStatus !== "authenticated" ||
-        balance === null
-      }
-      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700"
-    >
-      {isVerifyingAll ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verifying Tasks...
-        </>
-      ) : (
-        "Refresh All Task Verifications"
-      )}
-    </Button>
-  );
 
   useEffect(() => {
     setAsciiLinesToShow(0);

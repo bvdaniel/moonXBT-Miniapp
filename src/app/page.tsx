@@ -18,6 +18,9 @@ import { formatEther } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
 import Image from "next/image";
+import { FaInstagram, FaTiktok, FaTelegram, FaGlobe } from 'react-icons/fa';
+import { SiFarcaster } from 'react-icons/si';
+import { BsGlobe } from 'react-icons/bs';
 
 // A0X Token Contract ABI - only the balanceOf function
 const tokenABI = [
@@ -43,7 +46,8 @@ interface Task {
     | "tiktok"
     | "instagram"
     | "telegram"
-    | "a0x";
+    | "a0x"
+    | "zora";
   isRequired: boolean;
   isCompleted: boolean;
   needsAuth: boolean;
@@ -51,6 +55,7 @@ interface Task {
   icon: React.ReactNode;
   targetUsername?: string;
   verificationError?: string | null; // Para mostrar errores específicos de la tarea
+  action?: () => void;
 }
 
 interface VerificationResult {
@@ -58,6 +63,17 @@ interface VerificationResult {
   isCompleted: boolean;
   error?: string;
 }
+
+const asciiLogoLines = [
+  "                                               /$$    /$$ /$$$$$$$  /$$$$$$$$",
+  "                                               | $$  / $$| $$__  $$|__  $$__/",
+  " /$$$$$$/$$$$   /$$$$$$   /$$$$$$  /$$$$$$$ |  $$/ $$/| $$    $$   | $$",
+  "| $$_  $$_  $$ /$$__  $$ /$$__  $$| $$__  $$    $$$$/ | $$$$$$$    | $$",   
+  "| $$   $$   $$| $$    $$| $$    $$| $$    $$  >$$  $$ | $$__  $$   | $$",   
+  "| $$ | $$ | $$| $$  | $$| $$  | $$| $$  | $$ /$$/   $$| $$    $$   | $$",  
+  "| $$ | $$ | $$|  $$$$$$/|  $$$$$$/| $$  | $$| $$    $$| $$$$$$$/   | $$",   
+  "|__/ |__/ |__/  ______/   ______/ |__/  |__/|__/  |__/|_______/    |__/",                                                                                                                         
+  ]; 
 
 export default function UpdatedAirdropComponent() {
   const { data: session, status: sessionStatus } = useSession();
@@ -67,6 +83,7 @@ export default function UpdatedAirdropComponent() {
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [balance, setBalance] = useState<string | null>(null);
+  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
 
   const {
     data: tokenBalanceData,
@@ -125,7 +142,7 @@ export default function UpdatedAirdropComponent() {
         needsAuth: true,
         url: "https://x.com/moonXBT_ai",
         targetUsername: "moonXBT_ai",
-        icon: <Twitter className="w-5 h-5 text-blue-400" />,
+        icon: <Image src="/x.png" alt="X" width={20} height={20} className="inline-block mr-2" />,
         verificationError: null,
       },
       {
@@ -162,6 +179,18 @@ export default function UpdatedAirdropComponent() {
         needsAuth: false,
         url: "https://t.me/A0X_Portal",
         icon: <Send className="w-5 h-5 text-blue-500" />,
+        verificationError: null,
+      },
+      {
+        id: "follow-zora",
+        title: "Follow on Zora",
+        description: "Follow @moonxbt_ai",
+        socialNetwork: "zora",
+        isRequired: false,
+        isCompleted: false,
+        needsAuth: false,
+        url: "https://zora.co/moonxbt_ai",
+        icon: <Image src="/zora.png" alt="Zora" width={20} height={20} className="inline-block mr-2" />,
         verificationError: null,
       },
     ]);
@@ -346,6 +375,25 @@ export default function UpdatedAirdropComponent() {
     }
   };
 
+  const getTaskIcon = (id: string) => {
+    switch (id) {
+      case 'follow-twitter':
+        return <Image src="/x.png" alt="X" width={20} height={20} className="inline-block mr-2" />;
+      case 'follow-zora':
+        return <Image src="/zora.png" alt="Zora" width={20} height={20} className="inline-block mr-2" />;
+      case 'follow-farcaster':
+        return <SiFarcaster className="inline-block mr-2 text-blue-200" />;
+      case 'follow-tiktok':
+        return <FaTiktok className="inline-block mr-2 text-blue-200" />;
+      case 'follow-instagram':
+        return <FaInstagram className="inline-block mr-2 text-blue-200" />;
+      case 'join-telegram':
+        return <FaTelegram className="inline-block mr-2 text-blue-200" />;
+      default:
+        return null;
+    }
+  };
+
   const renderTaskButton = (task: Task) => {
     if (task.socialNetwork === "a0x") {
       return (
@@ -498,13 +546,16 @@ export default function UpdatedAirdropComponent() {
 
   const requiredTasks = tasks.filter((task) => task.isRequired);
   const optionalTasks = tasks.filter((task) => !task.isRequired);
-  const completedRequiredTasksCount = requiredTasks.filter(
+  const completedRequiredTasks = requiredTasks.filter(
+    (task) => task.isCompleted
+  ).length;
+  const completedOptionalTasks = optionalTasks.filter(
     (task) => task.isCompleted
   ).length;
   const allRequiredCompleted =
     isConnected &&
     sessionStatus === "authenticated" &&
-    completedRequiredTasksCount === requiredTasks.length;
+    completedRequiredTasks === requiredTasks.length;
 
   const handleClaimAirdrop = async () => {
     if (!allRequiredCompleted) {
@@ -563,268 +614,127 @@ export default function UpdatedAirdropComponent() {
     </Button>
   );
 
+  useEffect(() => {
+    setAsciiLinesToShow(0);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setAsciiLinesToShow(i);
+      if (i >= asciiLogoLines.length) clearInterval(interval);
+    }, 120);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
-      <div className="max-w-lg w-full space-y-6 bg-gray-800/50 backdrop-blur-md p-6 rounded-xl shadow-2xl">
-        {/* Animated background gradients */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-transparent to-purple-600/20 animate-gradient -z-10" />
-        <div className="absolute inset-0 bg-[url('/grid.png')] opacity-20 -z-10" />
-
-        {/* Neon glow effects */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-500/30 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-500/30 rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 container mx-auto px-4 py-4 flex flex-col items-center justify-center">
-          <div className="max-w-xl w-full space-y-8">
-            {/* Header with anime character */}
-            <div className="text-center relative">
-              <Image
-                src="/moonxbt-mascot.png"
-                alt="MoonXBT Mascot"
-                width={120}
-                height={120}
-                className="mx-auto mb-4"
-              />
-              <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                MoonXBT Airdrop
-              </h1>
-              <p className="text-blue-200/80">
-                Complete tasks to earn your airdrop!
-              </p>
-            </div>
-
-            {/* Balance card with neon effect */}
-            {isConnected && balance !== null && (
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg blur opacity-50 group-hover:opacity-75 transition duration-1000"></div>
-                <div className="relative bg-[#0F1729] rounded-lg p-6 text-center">
-                  <p className="text-blue-300">Your $A0X Balance</p>
-                  <p className="text-3xl font-bold text-white">
-                    {Number(balance).toLocaleString()} A0X
-                  </p>
-                </div>
-              </div>
-            )}
+    <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
+      {/* Scanline effect */}
+      <div className="scanline pointer-events-none absolute inset-0 z-10" />
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-2 py-8">
+        <pre className="text-white text-xs sm:text-sm leading-none mb-6 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest">
+          {asciiLogoLines.slice(0, asciiLinesToShow).join("\n")}
+        </pre>
+        <div className="max-w-xl w-full space-y-8">
+          <div className="text-center mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2 tracking-widest text-white drop-shadow-[0_0_2px_white]">
+              MOONXBT AIRDROP
+            </h1>
+            <p className="text-blue-100 text-sm sm:text-base tracking-wide">
+              Complete tasks to earn your airdrop!
+            </p>
           </div>
-        </div>
-
-        {/* Wallet & Session Status */}
-        <div className="bg-gray-700/50 rounded-lg p-4 space-y-3 z-10">
-          {/* <div className="flex justify-between items-center">
-            <span className="text-gray-300 flex items-center">
-              <Wallet className="w-4 h-4 mr-2" />
-              Wallet:
-            </span>
-            <div className="flex items-center space-x-2">
-              <span
-                className={`text-sm font-mono ${
-                  isConnected ? "text-green-400" : "text-red-400"
-                }`}
-              >
-                {isConnected && address
-                  ? `${address.slice(0, 6)}...${address.slice(-4)}`
-                  : "Not Connected"}
-              </span>
-              {isConnected && address && (
-                <Button
-                  onClick={() =>
-                    window.open(
-                      `https://basescan.org/address/${address}`,
-                      "_blank"
-                    )
-                  }
-                  className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </Button>
-              )}
+          {isConnected && balance !== null && (
+            <div className="terminal-border bg-[#1752F0] p-4 my-2 relative text-center">
+              <div className="font-mono text-white text-lg">
+                <span className="text-blue-200">Your $A0X Balance:</span>
+                <span className="ml-2 text-white font-bold">{Number(balance).toLocaleString()} A0X</span>
+              </div>
             </div>
-
-            {isConnected && (
-              <div className="flex justify-between items-center">
-                <span className="text-gray-300 flex items-center">
-                  <Coins className="w-4 h-4 mr-2" />
-                  A0X Balance:
-                </span>
-                {isLoadingTokenBalance ? (
-                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                ) : (
-                  <span
-                    className={`text-sm font-semibold ${
-                      balance !== null && Number(balance) >= MIN_A0X_REQUIRED
-                        ? "text-yellow-400"
-                        : balance !== null
-                        ? "text-orange-400"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {balance !== null
-                      ? `${Number(balance).toLocaleString()} A0X`
-                      : tokenBalanceError
-                      ? "Error"
-                      : "Loading..."}
-                  </span>
-                )}
-              </div>
-            )}
-
-            {sessionStatus === "authenticated" && session && (
-              <div className="border-t border-gray-600 pt-3 mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-                {session.fid && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-purple-400 flex items-center">
-                      <MessageCircle size={14} className="mr-1" /> Farcaster ✓
-                    </span>
-                    <Button
-                      onClick={() =>
-                        window.open(`https://warpcast.com/ai420z`, "_blank")
-                      }
-                      className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-                {session.twitterHandle && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-blue-400 flex items-center">
-                      <Twitter size={14} className="mr-1" /> X (Twitter) ✓
-                    </span>
-                    <Button
-                      onClick={() =>
-                        window.open(`https://x.com/moonXBT_ai`, "_blank")
-                      }
-                      className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-            {sessionStatus === "authenticated" && (
-              <Button
-                onClick={() =>
-                  signOut({ callbackUrl: window.location.pathname })
-                }
-                className="w-full mt-2 bg-red-700/70 hover:bg-red-600 text-xs py-1"
-              >
-                Sign Out
-              </Button>
-            )}
-          </div> */}
-
-          {/* Task Sections */}
-          {["Required", "Optional"].map((type) => {
-            const taskList =
-              type === "Required" ? requiredTasks : optionalTasks;
-            if (taskList.length === 0) return null;
-            return (
-              <div key={type} className="space-y-3">
-                <h2 className="text-xl font-semibold text-gray-100 border-b border-gray-700 pb-2 mb-3">
-                  {type} Tasks
-                </h2>
-                {taskList.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`bg-gray-700/60 rounded-lg p-3 sm:p-4 flex flex-col sm:flex-row justify-between sm:items-center space-y-2 sm:space-y-0
-                              ${
-                                task.isCompleted
-                                  ? "border-l-4 border-green-500"
-                                  : task.verificationError
-                                  ? "border-l-4 border-red-500"
-                                  : "border-l-4 border-gray-600"
-                              }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <span className="mt-1">{task.icon}</span>
+          )}
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-lg font-bold mb-2 text-white border-b border-white/30 pb-1 tracking-widest">
+                REQUIRED TASKS
+              </h2>
+              <div className="space-y-3">
+                {requiredTasks.map((task) => (
+                  <div key={task.id} className="terminal-border bg-[#1752F0] p-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {task.isCompleted ? (
+                        <span className="text-green-300">[✓]</span>
+                      ) : (
+                        <span className="text-white">[ ]</span>
+                      )}
                       <div>
-                        <h3 className="font-medium text-gray-50">
-                          {task.title}
-                        </h3>
-                        <p className="text-xs text-gray-400">
-                          {task.description}
-                        </p>
+                        <span className="text-blue-100 font-bold flex items-center">{getTaskIcon(task.id)}{task.title}</span>
+                        <div className="text-xs text-blue-50">{task.description}</div>
                       </div>
                     </div>
-                    <div className="sm:min-w-[180px] sm:text-right">
-                      {" "}
-                      {/* Ensure button area has enough space */}
-                      {renderTaskButton(task)}
-                    </div>
+                    {renderTaskButton(task)}
                   </div>
                 ))}
               </div>
-            );
-          })}
-
-          {/* Refresh Button - solo mostrar si hay tareas que necesiten auth y sesión o wallet */}
-          {(tasks.some((t) => t.needsAuth) ||
-            tasks.some((t) => t.id === "hold-a0x")) &&
-            refreshButton}
-
-          {/* Eligibility & Claim */}
-          <div
-            className={`rounded-lg p-4 text-center border-2 ${
-              allRequiredCompleted
-                ? "bg-green-900/30 border-green-500"
-                : isConnected && sessionStatus === "authenticated"
-                ? "bg-yellow-900/30 border-yellow-500"
-                : "bg-gray-700/30 border-gray-500"
-            }`}
-          >
-            <h2 className="text-lg font-bold mb-2">
-              {allRequiredCompleted
-                ? "🎉 You are Eligible for the Airdrop!"
-                : isConnected && sessionStatus === "authenticated"
-                ? "Almost there!"
-                : "Connect and Sign In to Check Eligibility"}
-            </h2>
-            <p className="text-sm text-gray-300 mb-3">
-              {isConnected && sessionStatus === "authenticated"
-                ? `${completedRequiredTasksCount} / ${requiredTasks.length} required tasks completed.`
-                : "Please connect your wallet and sign in with your social accounts."}
-            </p>
-
-            {allRequiredCompleted && (
-              <Button
-                onClick={handleClaimAirdrop}
-                disabled={isClaiming}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-2 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105"
-              >
-                {isClaiming ? (
-                  <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Claiming...
-                  </>
-                ) : (
-                  "Claim Your Airdrop Now!"
-                )}
-              </Button>
-            )}
-            {claimMessage && (
-              <p
-                className={`mt-3 text-sm ${
-                  claimMessage.includes("Error") ||
-                  claimMessage.includes("Failed")
-                    ? "text-red-400"
-                    : "text-green-400"
-                }`}
-              >
-                {claimMessage}
-              </p>
-            )}
-            {!allRequiredCompleted &&
-              isConnected &&
-              sessionStatus === "authenticated" &&
-              requiredTasks.length > 0 && (
-                <p className="text-xs text-yellow-300 mt-2">
-                  Complete all required tasks above to enable the claim button.
-                </p>
-              )}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold mb-2 text-white border-b border-white/30 pb-1 tracking-widest">
+                BONUS TASKS
+              </h2>
+              <div className="space-y-3">
+                {optionalTasks.map((task) => (
+                  <div key={task.id} className="terminal-border bg-[#1752F0] p-3 flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {task.isCompleted ? (
+                        <span className="text-green-300">[✓]</span>
+                      ) : (
+                        <span className="text-white">[ ]</span>
+                      )}
+                      <div>
+                        <span className="text-blue-100 font-bold flex items-center">{getTaskIcon(task.id)}{task.title}</span>
+                        <div className="text-xs text-blue-50">{task.description}</div>
+                      </div>
+                    </div>
+                    {renderTaskButton(task)}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="terminal-border bg-[#1752F0] p-4 text-center mt-4">
+              <pre className="text-white text-xs mb-2 select-none">
+                [{"=".repeat(completedRequiredTasks)}{" ".repeat(requiredTasks.length-completedRequiredTasks)}] {completedRequiredTasks}/{requiredTasks.length} Required
+                [{"=".repeat(completedOptionalTasks)}{" ".repeat(optionalTasks.length-completedOptionalTasks)}] {completedOptionalTasks}/{optionalTasks.length} Bonus
+              </pre>
+              <span className="bios-cursor" />
+            </div>
           </div>
         </div>
       </div>
+      <style jsx global>{`
+        .terminal-border {
+          border: 2px solid #fff;
+          border-radius: 0;
+          box-shadow: 0 0 0 2px #1752F0, 0 0 8px #fff2;
+        }
+        .scanline {
+          background: repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.04) 0px,
+            rgba(255,255,255,0.04) 1px,
+            transparent 1px,
+            transparent 4px
+          );
+        }
+        .bios-cursor {
+          display: inline-block;
+          width: 8px;
+          height: 1em;
+          background: #fff;
+          animation: blink 1s steps(1) infinite;
+          vertical-align: bottom;
+        }
+        @keyframes blink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
+        }
+      `}</style>
     </main>
   );
 }

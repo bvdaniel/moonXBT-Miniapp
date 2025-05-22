@@ -11,7 +11,7 @@ import {
   Send,
 } from "lucide-react";
 import { signIn, useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { formatEther } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
@@ -223,7 +223,7 @@ export default function UpdatedAirdropComponent() {
     }
   }, [tokenBalanceData, tokenBalanceError, address]);
 
-  const verifyAllTasks = async () => {
+  const verifyAllTasks = useCallback(async () => {
     if (!address || balance === null || sessionStatus !== "authenticated") {
       // No verificar si no hay wallet, balance o sesión
       // Podrías querer actualizar los errores de las tareas a "Wallet not connected" o "Sign in needed"
@@ -285,7 +285,7 @@ export default function UpdatedAirdropComponent() {
     } finally {
       setIsVerifyingAll(false);
     }
-  };
+  }, [address, balance, isConnected, sessionStatus]);
 
   const updateTasksFromVerification = (results: VerificationResult[]) => {
     setTasks((prevTasks) =>
@@ -703,6 +703,26 @@ export default function UpdatedAirdropComponent() {
                 [{"=".repeat(completedOptionalTasks)}{" ".repeat(optionalTasks.length-completedOptionalTasks)}] {completedOptionalTasks}/{optionalTasks.length} Bonus
               </pre>
               <span className="bios-cursor" />
+            </div>
+            <div className="w-full flex flex-col items-center mt-4">
+              <Button
+                onClick={handleClaimAirdrop}
+                disabled={!allRequiredCompleted || isClaiming}
+                className="w-full bg-green-600 hover:bg-green-700 mt-2"
+              >
+                {isClaiming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Claiming...
+                  </>
+                ) : (
+                  "Claim Airdrop"
+                )}
+              </Button>
+              {claimMessage && (
+                <div className={`mt-2 text-sm ${claimMessage.includes("Error") || claimMessage.includes("Failed") ? "text-red-400" : "text-green-400"}`}>
+                  {claimMessage}
+                </div>
+              )}
             </div>
           </div>
         </div>

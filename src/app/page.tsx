@@ -62,7 +62,7 @@ interface VerificationResult {
 }
 
 const asciiLogoLines = [
-  "                                               /$$    /$$ /$$$$$$$  /$$$$$$$$",
+  "                                                /$$   /$$ /$$$$$$$  /$$$$$$$$",
   "                                               | $$  / $$| $$__  $$|__  $$__/",
   " /$$$$$$/$$$$   /$$$$$$   /$$$$$$  /$$$$$$$ |  $$/ $$/| $$    $$   | $$",
   "| $$_  $$_  $$ /$$__  $$ /$$__  $$| $$__  $$    $$$$/ | $$$$$$$    | $$",   
@@ -624,23 +624,35 @@ export default function UpdatedAirdropComponent() {
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
-      {/* Scanline effect */}
+      {/* Video background */}
+      <div className="absolute inset-0 z-0 w-full h-full overflow-hidden pointer-events-none">
+        <video
+          src="/bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-full object-cover opacity-20"
+        />
+      </div>
       <div className="scanline pointer-events-none absolute inset-0 z-10" />
-      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-2 py-8">
-        <pre className="text-white text-xs sm:text-sm leading-none mb-6 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest">
-          {asciiLogoLines.slice(0, asciiLinesToShow).join("\n")}
-        </pre>
-        <div className="max-w-xl w-full space-y-8">
-          <div className="text-center mb-4">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-2 tracking-widest text-white drop-shadow-[0_0_2px_white]">
-              MOONXBT AIRDROP
+      <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-2 sm:px-4 py-4">
+        <div className="relative w-full flex justify-center items-center">
+          <pre className="text-white text-[5px] sm:text-[7px] leading-none mb-1 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest overflow-x-auto whitespace-pre max-w-full">
+            {asciiLogoLines.slice(0, asciiLinesToShow).join("\n")}
+          </pre>
+        </div>
+        <div className="w-full max-w-xs sm:max-w-sm space-y-4">
+          <div className="text-center mb-2">
+            <h1 className="text-base sm:text-lg font-bold mb-1 tracking-widest text-white drop-shadow-[0_0_2px_white]">
+              AIRDROP
             </h1>
-            <p className="text-blue-100 text-sm sm:text-base tracking-wide">
+            <p className="text-blue-100 text-[11px] sm:text-xs tracking-wide">
               Complete tasks to earn your airdrop!
             </p>
           </div>
           {isConnected && balance !== null && (
-            <div className="terminal-border bg-[#1752F0] p-4 my-2 relative text-center">
+            <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 my-1 relative text-center w-full">
               <div className="font-mono text-white text-lg">
                 <span className="text-blue-200">Your $A0X Balance:</span>
                 <span className="ml-2 text-white font-bold">{Number(balance).toLocaleString()} A0X</span>
@@ -649,12 +661,20 @@ export default function UpdatedAirdropComponent() {
           )}
           <div className="space-y-8">
             <div>
-              <h2 className="text-lg font-bold mb-2 text-white border-b border-white/30 pb-1 tracking-widest">
-                REQUIRED TASKS
-              </h2>
-              <div className="space-y-3">
+              <div className="relative flex items-center justify-between">
+                <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
+                  REQUIRED TASKS
+                </h2>
+                <img
+                  src="/moon_mini.png"
+                  alt="Moon"
+                  className="w-8 h-8 animate-bob pointer-events-none neon-moon"
+                  style={{ marginBottom: '-8px' }}
+                />
+              </div>
+              <div className="space-y-1">
                 {requiredTasks.map((task) => (
-                  <div key={task.id} className="terminal-border bg-[#1752F0] p-3 flex items-center justify-between">
+                  <div key={task.id} className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5">
                     <div className="flex items-center space-x-3">
                       {task.isCompleted ? (
                         <span className="text-green-300">[✓]</span>
@@ -662,22 +682,22 @@ export default function UpdatedAirdropComponent() {
                         <span className="text-white">[ ]</span>
                       )}
                       <div>
-                        <span className="text-blue-100 font-bold flex items-center">{getTaskIcon(task.id)}{task.title}</span>
-                        <div className="text-xs text-blue-50">{task.description}</div>
+                        <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">{getTaskIcon(task.id)}{task.title}</span>
+                        <div className="text-[11px] text-blue-50 break-words max-w-full">{task.description}</div>
                       </div>
                     </div>
-                    {renderTaskButton(task)}
+                    <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">{renderTaskButton(task)}</div>
                   </div>
                 ))}
               </div>
             </div>
             <div>
-              <h2 className="text-lg font-bold mb-2 text-white border-b border-white/30 pb-1 tracking-widest">
+              <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
                 BONUS TASKS
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {optionalTasks.map((task) => (
-                  <div key={task.id} className="terminal-border bg-[#1752F0] p-3 flex items-center justify-between">
+                  <div key={task.id} className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5">
                     <div className="flex items-center space-x-3">
                       {task.isCompleted ? (
                         <span className="text-green-300">[✓]</span>
@@ -685,11 +705,11 @@ export default function UpdatedAirdropComponent() {
                         <span className="text-white">[ ]</span>
                       )}
                       <div>
-                        <span className="text-blue-100 font-bold flex items-center">{getTaskIcon(task.id)}{task.title}</span>
-                        <div className="text-xs text-blue-50">{task.description}</div>
+                        <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">{getTaskIcon(task.id)}{task.title}</span>
+                        <div className="text-[11px] text-blue-50 break-words max-w-full">{task.description}</div>
                       </div>
                     </div>
-                    {renderTaskButton(task)}
+                    <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">{renderTaskButton(task)}</div>
                   </div>
                 ))}
               </div>
@@ -697,14 +717,14 @@ export default function UpdatedAirdropComponent() {
             <div className="w-full flex justify-end">
               {refreshButton}
             </div>
-            <div className="terminal-border bg-[#1752F0] p-4 text-center mt-4">
+            <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center mt-2 w-full">
               <pre className="text-white text-xs mb-2 select-none">
                 [{"=".repeat(completedRequiredTasks)}{" ".repeat(requiredTasks.length-completedRequiredTasks)}] {completedRequiredTasks}/{requiredTasks.length} Required
                 [{"=".repeat(completedOptionalTasks)}{" ".repeat(optionalTasks.length-completedOptionalTasks)}] {completedOptionalTasks}/{optionalTasks.length} Bonus
               </pre>
               <span className="bios-cursor" />
             </div>
-            <div className="w-full flex flex-col items-center mt-4">
+            <div className="w-full flex flex-col items-center mt-1">
               <Button
                 onClick={handleClaimAirdrop}
                 disabled={!allRequiredCompleted || isClaiming}
@@ -753,6 +773,19 @@ export default function UpdatedAirdropComponent() {
         @keyframes blink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
+        }
+        @keyframes bob {
+          0% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-8px) rotate(8deg); }
+          100% { transform: translateY(0) rotate(0deg); }
+        }
+        .animate-bob {
+          animation: bob 2.8s ease-in-out infinite;
+        }
+        .neon-moon {
+          border: 2px solid #fff;
+          border-radius: 50%;
+          box-shadow: 0 0 8px 2px #fff, 0 0 24px 4px #fff8, 0 0 40px 8px #fff4;
         }
       `}</style>
     </main>

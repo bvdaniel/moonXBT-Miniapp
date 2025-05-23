@@ -628,11 +628,12 @@ export default function UpdatedAirdropComponent() {
                 }`}
               >
                 {balance !== null
-                  ? `${Number(balance).toLocaleString()} / ${MIN_A0X_REQUIRED}`
+                  ? `${Number(
+                      balance
+                    ).toLocaleString()} / ${MIN_A0X_REQUIRED} A0X`
                   : isConnected
                   ? "Loading..."
                   : "Wallet not connected"}{" "}
-                A0X
               </span>
               {task.isCompleted && (
                 <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -657,7 +658,7 @@ export default function UpdatedAirdropComponent() {
               {isVerifyingFarcaster ? (
                 <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
               ) : task.isCompleted ? (
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
                   <span className="text-xs text-green-400">Following</span>
                 </div>
@@ -701,7 +702,7 @@ export default function UpdatedAirdropComponent() {
                 {isVerifyingAll && !task.isCompleted ? (
                   <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
                 ) : task.isCompleted ? (
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
                     <CheckCircle2 className="w-4 h-4 text-green-500" />
                     <span className="text-xs text-green-400">Following</span>
                   </div>
@@ -897,24 +898,25 @@ export default function UpdatedAirdropComponent() {
           {!task.isCompleted && (
             <div className="flex items-center space-x-2">
               {isTiktok && previousUsername && (
-                <span className="text-xs text-gray-400">
-                  {previousUsername}
+                <span className="text-xs text-gray-300">
+                  @{previousUsername}
                 </span>
               )}
               {isInstagram && previousUsername && (
-                <span className="text-xs text-gray-400">
-                  {previousUsername}
+                <span className="text-xs text-gray-300">
+                  @{previousUsername}
                 </span>
               )}
               {!isTiktok && !isInstagram && userInfo && previousUsername && (
-                <span className="text-xs text-gray-400">
-                  {previousUsername}
+                <span className="text-xs text-gray-300">
+                  @{previousUsername}
                 </span>
               )}
               <Button
                 onClick={() => handleExternalLink(task.url!)}
-                className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1 text-white"
+                className="bg-gray-600 hover:bg-gray-700 text-xs p-0 px-1 h-6 text-white rounded-none"
                 title={`Open ${socialName}`}
+                size="sm"
               >
                 Open Link <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
@@ -925,7 +927,7 @@ export default function UpdatedAirdropComponent() {
                     setUsername(previousUsername);
                   }
                 }}
-                className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1 rounded-full text-white"
+                className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
                 title={`Add ${socialName} username manually`}
                 disabled={!user?.fid}
               >
@@ -950,7 +952,7 @@ export default function UpdatedAirdropComponent() {
                   }
                 }}
                 disabled={isSubmitting || !username || !user?.fid}
-                className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
               >
                 {isSubmitting ? (
                   <Loader2 className="w-3 h-3 animate-spin" />
@@ -982,7 +984,7 @@ export default function UpdatedAirdropComponent() {
         <div className="flex items-center space-x-2">
           <Button
             onClick={() => handleExternalLink(task.url!)}
-            className="bg-gray-600 hover:bg-gray-700 text-sm px-3 py-1 text-white"
+            className="bg-gray-600 hover:bg-gray-700 text-sm p-0 px-1 h-6 text-white rounded-none"
           >
             Open Link <ExternalLink className="w-3 h-3 ml-1" />
           </Button>
@@ -1066,7 +1068,7 @@ export default function UpdatedAirdropComponent() {
     <Button
       onClick={verifyAllTasks}
       disabled={isVerifyingAll || !isConnected || balance === null}
-      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700"
+      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 border-white/30 border rounded-none text-white"
     >
       {isVerifyingAll ? (
         <>
@@ -1523,10 +1525,12 @@ export default function UpdatedAirdropComponent() {
                 <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
                   REQUIRED TASKS
                 </h2>
-                <img
+                <Image
                   src="/moon_mini.png"
                   alt="Moon"
                   className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                  width={48}
+                  height={48}
                   style={{ marginBottom: "-12px" }}
                 />
               </div>
@@ -1560,9 +1564,11 @@ export default function UpdatedAirdropComponent() {
               </div>
             </div>
             <div>
-              <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
-                BONUS TASKS
-              </h2>
+              <div className="relative flex items-center justify-between">
+                <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
+                  BONUS TASKS
+                </h2>
+              </div>
               <div className="space-y-1">
                 {optionalTasks.map((task) => (
                   <div

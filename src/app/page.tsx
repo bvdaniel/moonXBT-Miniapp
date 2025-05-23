@@ -668,8 +668,8 @@ export default function UpdatedAirdropComponent() {
                 <img
                   src="/moon_mini.png"
                   alt="Moon"
-                  className="w-8 h-8 animate-bob pointer-events-none neon-moon"
-                  style={{ marginBottom: '-8px' }}
+                  className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                  style={{ marginBottom: '-12px' }}
                 />
               </div>
               <div className="space-y-1">

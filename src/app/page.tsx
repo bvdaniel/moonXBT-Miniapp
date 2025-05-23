@@ -10,6 +10,7 @@ import {
   Play,
   Send,
   X,
+  RefreshCw,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { formatEther } from "viem";
@@ -125,6 +126,8 @@ export default function UpdatedAirdropComponent() {
   const [isSubmittingTelegram, setIsSubmittingTelegram] = useState(false);
   const [showTelegramInput, setShowTelegramInput] = useState(false);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   const {
     data: tokenBalanceData,
     isLoading: isLoadingTokenBalance,
@@ -165,25 +168,28 @@ export default function UpdatedAirdropComponent() {
   }, []);
 
   // Function to verify if the user follows the target account on Farcaster
-  const verifyFarcasterFollow = async (fid: number) => {
-    // Find the Farcaster task
+  const verifyFarcasterFollow = async (
+    fid: number,
+    isRefresh: boolean = false
+  ) => {
     const farcasterTask = tasks.find((task) => task.id === "follow-farcaster");
     if (!farcasterTask || !farcasterTask.targetUsername) return;
 
-    setIsVerifyingFarcaster(true);
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsVerifyingFarcaster(true);
+    }
+
     try {
-      // Call our API to verify follow status
       const response = await fetch(
-        `/api/verify-follow?fid=${fid}&targetUsername=${farcasterTask.targetUsername}`
+        `/api/verify-follow?fid=${fid}&targetUsername=${farcasterTask.targetUsername}&refresh=${isRefresh}`
       );
 
       if (response.ok) {
         const data = await response.json();
-
-        // Save full user info
         setUserInfo(data);
 
-        // Initialize participant
         if (data.fid && data.username) {
           try {
             const initResponse = await fetch(
@@ -195,11 +201,9 @@ export default function UpdatedAirdropComponent() {
                   fid: data.fid,
                   username: data.username,
                   displayName: data.displayName,
-                  pfpUrl: data.profilePicture, // Asegúrate que el nombre del campo coincida
+                  pfpUrl: data.profilePicture,
                   isFollowingFarcaster: data.isFollowing,
                   walletAddress: data.walletAddress,
-                  // twitterAccount: data.twitterAccount, // Descomentar si se envía
-                  // walletAddress: address, // Descomentar si se envía y está disponible
                 }),
               }
             );
@@ -214,36 +218,82 @@ export default function UpdatedAirdropComponent() {
           }
         }
 
-        // Update task status based on follow status
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => {
-            if (task.id === "follow-farcaster") {
-              return {
-                ...task,
-                isCompleted: data.isFollowing,
-                verificationError: data.isFollowing
+        // Actualizar tareas
+        const updatedTasks = tasks.map((task) => {
+          if (task.id === "follow-farcaster") {
+            return {
+              ...task,
+              isCompleted: data.isFollowing === true,
+              verificationError:
+                data.isFollowing === true
                   ? null
                   : "You're not following this account yet.",
-              };
-            }
+            };
+          }
 
-            if (task.id === "follow-twitter" && data.twitterAccount) {
+          if (task.id === "follow-twitter" && data.twitterAccount) {
+            if (data.tasks?.["follow-twitter"]?.completed === true) {
               return {
                 ...task,
-                isCompleted: data.isFollowing,
-                verificationError: data.isFollowing
-                  ? null
-                  : "You're not following this account yet.",
+                isCompleted: true,
+                verificationError: null,
               };
             }
-            return task;
-          })
-        );
+          }
+          return task;
+        });
+
+        setTasks(updatedTasks);
+
+        // Si hay una cuenta de Twitter, verificar el seguimiento
+        if (
+          data.twitterAccount &&
+          user?.fid &&
+          data.tasks?.["follow-twitter"]?.completed !== true
+        ) {
+          try {
+            const twitterResponse = await fetch(
+              "/api/a0x-framework/airdrop/verify-twitter-follow",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fid: user.fid,
+                  twitterUsername: data.twitterAccount,
+                  targetTwitterUsername: tasks.find(
+                    (t) => t.id === "follow-twitter"
+                  )?.targetUsername,
+                  walletAddress: data.walletAddress,
+                }),
+              }
+            );
+
+            if (twitterResponse.ok) {
+              const twitterData = await twitterResponse.json();
+              setTasks((prevTasks) =>
+                prevTasks.map((task) => {
+                  if (task.id === "follow-twitter") {
+                    return {
+                      ...task,
+                      isCompleted:
+                        twitterData.dataReceived.isFollowing === true,
+                      verificationError:
+                        twitterData.dataReceived.isFollowing === true
+                          ? null
+                          : "You're not following this account yet.",
+                    };
+                  }
+                  return task;
+                })
+              );
+            }
+          } catch (error) {
+            console.error("Error verifying Twitter follow:", error);
+          }
+        }
       } else {
-        // Handle error
         const errorData = await response.json();
         console.error("Error verifying Farcaster follow:", errorData);
-
         setTasks((prevTasks) =>
           prevTasks.map((task) =>
             task.id === "follow-farcaster"
@@ -269,7 +319,53 @@ export default function UpdatedAirdropComponent() {
         )
       );
     } finally {
-      setIsVerifyingFarcaster(false);
+      if (isRefresh) {
+        setIsRefreshing(false);
+      } else {
+        setIsVerifyingFarcaster(false);
+      }
+    }
+  };
+
+  const handleRefresh = () => {
+    if (user?.fid) {
+      verifyFarcasterFollow(user.fid, true);
+    }
+  };
+
+  const verifyTwitterFollow = async (
+    fid: number,
+    twitterUsername: string,
+    targetUsername: string,
+    walletAddress: string
+  ) => {
+    try {
+      const response = await fetch(
+        "/api/a0x-framework/airdrop/verify-twitter-follow",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fid,
+            twitterUsername,
+            targetTwitterUsername: targetUsername,
+            walletAddress,
+          }),
+        }
+      );
+      const dataIsFollowing = await response.json();
+      return {
+        isCompleted: dataIsFollowing.dataReceived.isFollowing === true,
+        verificationError: dataIsFollowing.dataReceived.isFollowing
+          ? null
+          : "You're not following this account yet.",
+      };
+    } catch (error) {
+      console.error("Error verifying Twitter follow:", error);
+      return {
+        isCompleted: false,
+        verificationError: "Error verifying follow status",
+      };
     }
   };
 
@@ -442,8 +538,7 @@ export default function UpdatedAirdropComponent() {
 
   const verifyAllTasks = useCallback(async () => {
     if (!address || balance === null) {
-      // Don't verify if no wallet, balance or session
-      // You might want to update task errors to "Wallet not connected" or "Sign in needed"
+      // No verificar si no hay wallet, balance o sesión
       setTasks((prevTasks) =>
         prevTasks.map((task) => {
           if (task.needsAuth) {
@@ -460,45 +555,26 @@ export default function UpdatedAirdropComponent() {
 
     setIsVerifyingAll(true);
     try {
-      const responseMock = {
-        ok: true,
-        json: async () => ({
-          results: [
-            {
-              fid: 783978,
-              taskId: "follow-farcaster",
-              username: "matiasp",
-              displayName: "Matias",
-              isFollowing: true,
-              isCompleted: true,
-              twitterAccount: null,
-              targetUsername: "ai420z",
-            },
-          ],
-          eligibleForAirdrop: true,
+      const response = await fetch("/api/verify-all-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          tokenBalance: Number(balance),
         }),
-      };
+      });
 
-      // const response = await fetch("/api/verify-all-tasks", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     walletAddress: address,
-      //     tokenBalance: Number(balance), // Backend already verifies it, but we send it
-      //   }),
-      // });
-
-      if (responseMock.ok) {
-        const data = await responseMock.json();
-        updateTasksFromVerification(data.results);
+      if (response.ok) {
+        const data = await response.json();
+        await updateTasksFromVerification(data.results);
         if (data.eligibleForAirdrop) {
-          // Optional: you could set a state here if you want
+          // Opcional: podrías establecer un estado aquí si lo deseas
         }
       } else {
-        // General verification API error
-        const errorData = await responseMock.json();
+        // Error general de la API de verificación
+        const errorData = await response.json();
         console.error("verify-all-tasks API error:", errorData);
-        // You could mark all uncompleted tasks with a generic error
+        // Podrías marcar todas las tareas no completadas con un error genérico
         setTasks((prevTasks) =>
           prevTasks.map((t) => ({
             ...t,
@@ -523,23 +599,60 @@ export default function UpdatedAirdropComponent() {
     }
   }, [address, balance, isConnected]);
 
-  const updateTasksFromVerification = (results: VerificationResult[]) => {
-    setTasks((prevTasks) =>
-      prevTasks.map((task) => {
-        const result = results.find((r) => r.taskId === task.id);
-        if (result) {
-          return {
-            ...task,
-            isCompleted: result.isCompleted,
-            verificationError: result.error || null,
-          };
-        }
-        // If a task is not in the results (e.g. 'hold-a0x' which is handled locally)
-        // maintain its state, but clear the error if the API didn't return one
-        if (task.id === "hold-a0x") return task; // Already handled by balance useEffect
-        return { ...task, verificationError: null }; // Clear errors if API didn't report for this task
-      })
-    );
+  const updateTasksFromVerification = async (results: VerificationResult[]) => {
+    try {
+      const updatedTasks = await Promise.all(
+        tasks.map(async (task) => {
+          const result = results.find((r) => r.taskId === task.id);
+          if (result) {
+            return {
+              ...task,
+              isCompleted: result.isCompleted,
+              verificationError: result.error || null,
+            };
+          }
+
+          if (task.id === "hold-a0x") return task;
+
+          if (task.id === "follow-twitter" && userInfo?.twitterAccount) {
+            if (userInfo.tasks["follow-twitter"]?.completed === true) {
+              return {
+                ...task,
+                isCompleted: true,
+                verificationError: null,
+              };
+            } else if (user?.fid) {
+              try {
+                const verificationResult = await verifyTwitterFollow(
+                  user.fid,
+                  userInfo.twitterAccount,
+                  tasks.find((t) => t.id === "follow-twitter")
+                    ?.targetUsername || "",
+                  userInfo.walletAddress
+                );
+                return {
+                  ...task,
+                  ...verificationResult,
+                };
+              } catch (error) {
+                console.error("Error verifying Twitter follow:", error);
+                return {
+                  ...task,
+                  isCompleted: false,
+                  verificationError: "Error verifying follow status",
+                };
+              }
+            }
+          }
+
+          return { ...task, verificationError: null };
+        })
+      );
+
+      setTasks(updatedTasks);
+    } catch (error) {
+      console.error("Error updating tasks:", error);
+    }
   };
 
   const handleExternalLink = (url: string) => {
@@ -556,9 +669,9 @@ export default function UpdatedAirdropComponent() {
   };
 
   // Function to manually verify a Farcaster follow task
-  const handleVerifyFarcasterFollow = () => {
+  const handleVerifyFarcasterFollow = async () => {
     if (user?.fid) {
-      verifyFarcasterFollow(user.fid);
+      await verifyFarcasterFollow(user.fid);
     } else {
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
@@ -745,13 +858,25 @@ export default function UpdatedAirdropComponent() {
                 </Button>
                 <Button
                   onClick={() => setShowTwitterInput(!showTwitterInput)}
-                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 p-0 px-1 rounded-none text-white"
+                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
                   title="Add manually"
                 >
                   {showTwitterInput ? (
                     <X className="w-3 h-3" />
                   ) : (
                     <span>+</span>
+                  )}
+                </Button>
+                <Button
+                  onClick={handleRefresh}
+                  disabled={isRefreshing || !user?.fid}
+                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
+                  title="Refresh verification"
+                >
+                  {isRefreshing ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3" />
                   )}
                 </Button>
               </div>
@@ -1084,7 +1209,6 @@ export default function UpdatedAirdropComponent() {
 
     setIsSubmittingTwitter(true);
     try {
-      // Call API to verify Twitter follow manually
       const response = await fetch(
         "/api/a0x-framework/airdrop/verify-twitter-follow",
         {
@@ -1116,17 +1240,17 @@ export default function UpdatedAirdropComponent() {
             if (task.id === "follow-twitter") {
               return {
                 ...task,
-                isCompleted: data.dataReceived.isFollowing,
-                verificationError: data.dataReceived.isFollowing
-                  ? null
-                  : "You're not following this account on X.",
+                isCompleted: data.dataReceived.isFollowing === true,
+                verificationError:
+                  data.dataReceived.isFollowing === true
+                    ? null
+                    : "You're not following this account on X.",
               };
             }
             return task;
           })
         );
-        // Hide input field if successful
-        if (data.dataReceived.isFollowing) {
+        if (data.dataReceived.isFollowing === true) {
           setShowTwitterInput(false);
         }
       } else {

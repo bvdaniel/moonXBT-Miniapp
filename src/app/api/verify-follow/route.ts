@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     // Get URL parameters
     const searchParams = request.nextUrl.searchParams;
     const fid = searchParams.get("fid");
+    const refresh = searchParams.get("refresh");
     const targetUsername = searchParams.get("targetUsername");
 
     // Validate parameters
@@ -37,32 +38,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    try {
-      const a0xApiUrl = `${A0X_AGENT_API_URL}/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+    if (refresh !== "true") {
+      try {
+        const a0xApiUrl = `${A0X_AGENT_API_URL}/a0x-framework/airdrop/participant-exists?fid=${fid}`;
 
-      const a0xResponse = await fetch(a0xApiUrl, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (a0xResponse.ok) {
-        const a0xData = await a0xResponse.json();
-        return NextResponse.json(
-          {
-            fid: a0xData.fid,
-            username: a0xData.username,
-            displayName: a0xData.displayName,
-            isFollowing: a0xData.isFollowing,
-            walletAddress: a0xData.walletAddress,
-            twitterAccount: a0xData.twitterAccount,
-            ...a0xData,
+        const a0xResponse = await fetch(a0xApiUrl, {
+          headers: {
+            "Content-Type": "application/json",
           },
-          { status: 200 }
-        );
+        });
+
+        if (a0xResponse.ok) {
+          const a0xData = await a0xResponse.json();
+          return NextResponse.json(
+            {
+              fid: a0xData.fid,
+              username: a0xData.username,
+              displayName: a0xData.displayName,
+              isFollowing: a0xData.isFollowing,
+              walletAddress: a0xData.walletAddress,
+              twitterAccount: a0xData.twitterAccount,
+              ...a0xData,
+            },
+            { status: 200 }
+          );
+        }
+      } catch (error) {
+        console.error("Error verifying follow status:", error);
       }
-    } catch (error) {
-      console.error("Error verifying follow status:", error);
     }
 
     const moonxbtFid = 900682;

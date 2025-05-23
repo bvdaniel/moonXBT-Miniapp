@@ -295,7 +295,7 @@ export default function UpdatedAirdropComponent() {
         isRequired: true,
         isCompleted: false,
         needsAuth: true,
-        url: "https://warpcast.com/ai420z",
+        url: "https://farcaster.xyz/ai420z",
         targetUsername: "ai420z",
         icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
         verificationError: null,
@@ -736,18 +736,16 @@ export default function UpdatedAirdropComponent() {
               <div className="flex items-center space-x-2">
                 <Button
                   onClick={() =>
-                    handleExternalLink(
-                      "https://warpcast.com/~/settings/verification"
-                    )
+                    handleExternalLink("https://farcaster.xyz/~/settings")
                   }
-                  className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 text-white"
-                  title="Verify on Warpcast"
+                  className="bg-purple-600 hover:bg-purple-700 text-xs h-6 p-0 px-1 rounded-none text-white"
+                  title="Verify on Farcaster"
                 >
-                  Verify on Warpcast <ExternalLink className="w-3 h-3 ml-1" />
+                  Verify on Farcaster <ExternalLink className="w-3 h-3 ml-1" />
                 </Button>
                 <Button
                   onClick={() => setShowTwitterInput(!showTwitterInput)}
-                  className="bg-gray-600 hover:bg-gray-700 text-xs px-2 py-1 rounded-full text-white"
+                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 p-0 px-1 rounded-none text-white"
                   title="Add manually"
                 >
                   {showTwitterInput ? (
@@ -767,7 +765,7 @@ export default function UpdatedAirdropComponent() {
                     onChange={(e) =>
                       setTwitterUsername(e.target.value.replace("@", ""))
                     }
-                    className="bg-gray-700 text-white text-xs rounded px-2 py-1 flex-grow max-w-[120px]"
+                    className="bg-gray-700 text-white text-xs rounded-none px-2 py-1 flex-grow max-w-[120px]"
                   />
                   <Button
                     onClick={() => {
@@ -776,7 +774,7 @@ export default function UpdatedAirdropComponent() {
                       }
                     }}
                     disabled={isSubmittingTwitter || !twitterUsername}
-                    className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                    className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
                   >
                     {isSubmittingTwitter ? (
                       <Loader2 className="w-3 h-3 animate-spin" />

@@ -555,43 +555,24 @@ export default function UpdatedAirdropComponent() {
 
     setIsVerifyingAll(true);
     try {
-      const responseMock = {
-        ok: true,
-        json: async () => ({
-          results: [
-            {
-              fid: 783978,
-              taskId: "follow-farcaster",
-              username: "matiasp",
-              displayName: "Matias",
-              isFollowing: true,
-              isCompleted: true,
-              twitterAccount: null,
-              targetUsername: "ai420z",
-            },
-          ],
-          eligibleForAirdrop: true,
+      const response = await fetch("/api/verify-all-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          tokenBalance: Number(balance),
         }),
-      };
+      });
 
-      // const response = await fetch("/api/verify-all-tasks", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     walletAddress: address,
-      //     tokenBalance: Number(balance),
-      //   }),
-      // });
-
-      if (responseMock.ok) {
-        const data = await responseMock.json();
+      if (response.ok) {
+        const data = await response.json();
         await updateTasksFromVerification(data.results);
         if (data.eligibleForAirdrop) {
           // Opcional: podrías establecer un estado aquí si lo deseas
         }
       } else {
         // Error general de la API de verificación
-        const errorData = await responseMock.json();
+        const errorData = await response.json();
         console.error("verify-all-tasks API error:", errorData);
         // Podrías marcar todas las tareas no completadas con un error genérico
         setTasks((prevTasks) =>

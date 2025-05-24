@@ -708,7 +708,7 @@ export default function UpdatedAirdropComponent() {
   // Function to manually verify a Farcaster follow task
   const handleVerifyFarcasterFollow = async () => {
     if (user?.fid) {
-      await verifyFarcasterFollow(user.fid);
+      await verifyFarcasterFollow(user.fid, true);
     } else {
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
@@ -805,7 +805,7 @@ export default function UpdatedAirdropComponent() {
         return (
           <div className="flex flex-col items-end space-y-1 text-right">
             <div className="flex items-center space-x-2">
-              {isVerifyingFarcaster ? (
+              {isVerifyingFarcaster || isRefreshing ? (
                 <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
               ) : task.isCompleted ? (
                 <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">

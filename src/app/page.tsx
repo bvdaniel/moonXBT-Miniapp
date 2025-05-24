@@ -665,12 +665,22 @@ export default function UpdatedAirdropComponent() {
                 <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
                   REQUIRED TASKS
                 </h2>
-                <img
-                  src="/moon_mini.png"
-                  alt="Moon"
-                  className="w-12 h-12 animate-bob pointer-events-none neon-moon"
-                  style={{ marginBottom: '-12px' }}
-                />
+                <div className="flex items-center">
+                  <img
+                    src="/moon_mini.png"
+                    alt="Moon"
+                    className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                    style={{ marginBottom: '-12px' }}
+                  />
+                  {session && (session.user as any)?.image && (
+                    <img
+                      src={(session.user as any).image}
+                      alt="User"
+                      className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                      style={{ marginBottom: '-12px', marginLeft: '-16px', zIndex: 10 }}
+                    />
+                  )}
+                </div>
               </div>
               <div className="space-y-1">
                 {requiredTasks.map((task) => (

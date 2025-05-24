@@ -127,6 +127,7 @@ export default function UpdatedAirdropComponent() {
   const [showTelegramInput, setShowTelegramInput] = useState(false);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
 
   const {
     data: tokenBalanceData,
@@ -289,6 +290,17 @@ export default function UpdatedAirdropComponent() {
             }
           } catch (error) {
             console.error("Error verifying Twitter follow:", error);
+            setTasks((prevTasks) =>
+              prevTasks.map((task) =>
+                task.id === "follow-twitter"
+                  ? {
+                      ...task,
+                      verificationError:
+                        "Error verifying Twitter follow status.",
+                    }
+                  : task
+              )
+            );
           }
         }
       } else {
@@ -339,6 +351,7 @@ export default function UpdatedAirdropComponent() {
     targetUsername: string,
     walletAddress: string
   ) => {
+    setIsVerifyingTwitter(true);
     try {
       const response = await fetch(
         "/api/a0x-framework/airdrop/verify-twitter-follow",
@@ -366,6 +379,8 @@ export default function UpdatedAirdropComponent() {
         isCompleted: false,
         verificationError: "Error verifying follow status",
       };
+    } finally {
+      setIsVerifyingTwitter(false);
     }
   };
 
@@ -433,12 +448,12 @@ export default function UpdatedAirdropComponent() {
       {
         id: "follow-instagram",
         title: "Follow on Instagram (Optional)",
-        description: "Follow @moonxbt_ai",
+        description: "Follow @moonxbt",
         socialNetwork: "instagram",
         isRequired: false,
         isCompleted: false, // Asumimos que no se verifica automáticamente
         needsAuth: false,
-        url: "https://www.instagram.com/moonxbt_ai/",
+        url: "https://www.instagram.com/moonxbt/",
         icon: (
           <svg
             role="img"
@@ -451,7 +466,7 @@ export default function UpdatedAirdropComponent() {
           </svg>
         ),
         verificationError: null,
-        targetUsername: "moonxbt_ai",
+        targetUsername: "moonxbt",
       },
       {
         id: "join-telegram",
@@ -534,54 +549,76 @@ export default function UpdatedAirdropComponent() {
     if (address && balance !== null) {
       verifyAllTasks();
     }
-  }, [address, balance]); // `session` object itself can cause too many re-renders if not careful
+  }, [address, balance]);
 
   const verifyAllTasks = useCallback(async () => {
-    if (!address || balance === null) {
-      // No verificar si no hay wallet, balance o sesión
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          if (task.needsAuth) {
-            return { ...task, verificationError: "Sign in to verify." };
-          }
-          if (task.id === "hold-a0x" && !isConnected) {
-            return { ...task, verificationError: "Connect wallet to verify." };
-          }
-          return task;
-        })
-      );
-      return;
-    }
-
     setIsVerifyingAll(true);
     try {
-      const response = await fetch("/api/verify-all-tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          tokenBalance: Number(balance),
-        }),
-      });
+      if (user?.fid) {
+        // Verificar Farcaster
+        await verifyFarcasterFollow(user.fid, true);
 
-      if (response.ok) {
-        const data = await response.json();
-        await updateTasksFromVerification(data.results);
-        if (data.eligibleForAirdrop) {
-          // Opcional: podrías establecer un estado aquí si lo deseas
+        // Si hay una cuenta de Twitter, verificar también
+        if (userInfo?.twitterAccount) {
+          try {
+            const twitterResponse = await fetch(
+              "/api/a0x-framework/airdrop/verify-twitter-follow",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  fid: user.fid,
+                  twitterUsername: userInfo.twitterAccount,
+                  targetTwitterUsername: tasks.find(
+                    (t) => t.id === "follow-twitter"
+                  )?.targetUsername,
+                  walletAddress: userInfo.walletAddress,
+                }),
+              }
+            );
+
+            if (twitterResponse.ok) {
+              const twitterData = await twitterResponse.json();
+              setTasks((prevTasks) =>
+                prevTasks.map((task) => {
+                  if (task.id === "follow-twitter") {
+                    return {
+                      ...task,
+                      isCompleted:
+                        twitterData.dataReceived.isFollowing === true,
+                      verificationError:
+                        twitterData.dataReceived.isFollowing === true
+                          ? null
+                          : "You're not following this account yet.",
+                    };
+                  }
+                  return task;
+                })
+              );
+            }
+          } catch (error) {
+            console.error("Error verifying Twitter follow:", error);
+            setTasks((prevTasks) =>
+              prevTasks.map((task) =>
+                task.id === "follow-twitter"
+                  ? {
+                      ...task,
+                      verificationError:
+                        "Error verifying Twitter follow status.",
+                    }
+                  : task
+              )
+            );
+          }
         }
       } else {
-        // Error general de la API de verificación
-        const errorData = await response.json();
-        console.error("verify-all-tasks API error:", errorData);
-        // Podrías marcar todas las tareas no completadas con un error genérico
         setTasks((prevTasks) =>
-          prevTasks.map((t) => ({
-            ...t,
-            verificationError: t.isCompleted
-              ? null
-              : "Verification failed. Please try again.",
-          }))
+          prevTasks.map((task) => {
+            if (task.needsAuth) {
+              return { ...task, verificationError: "Sign in to verify." };
+            }
+            return task;
+          })
         );
       }
     } catch (error) {
@@ -597,7 +634,7 @@ export default function UpdatedAirdropComponent() {
     } finally {
       setIsVerifyingAll(false);
     }
-  }, [address, balance, isConnected]);
+  }, [user?.fid, userInfo, tasks]);
 
   const updateTasksFromVerification = async (results: VerificationResult[]) => {
     try {
@@ -694,8 +731,8 @@ export default function UpdatedAirdropComponent() {
           <Image
             src="/x.png"
             alt="X"
-            width={20}
-            height={20}
+            width={12}
+            height={12}
             className="inline-block mr-2"
           />
         );
@@ -780,14 +817,14 @@ export default function UpdatedAirdropComponent() {
                   <span className="text-xs text-red-400">Not following</span>
                   <Button
                     onClick={() => handleExternalLink(task.url!)}
-                    className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1"
+                    className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                     title={`Open ${task.socialNetwork} to follow`}
                   >
                     Follow <ExternalLink className="w-3 h-3 ml-1" />
                   </Button>
                   <Button
                     onClick={handleVerifyFarcasterFollow}
-                    className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                    className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                     disabled={isVerifyingFarcaster || !user?.fid}
                     title="Verify following"
                   >
@@ -796,11 +833,11 @@ export default function UpdatedAirdropComponent() {
                 </div>
               )}
             </div>
-            {task.verificationError && (
+            {/* {task.verificationError && (
               <span className="text-xs text-red-400">
                 {task.verificationError}
               </span>
-            )}
+            )} */}
           </div>
         );
       }
@@ -808,7 +845,11 @@ export default function UpdatedAirdropComponent() {
       // For Twitter tasks
       if (task.id === "follow-twitter") {
         // If there's a linked Twitter account
-        if (userInfo?.twitterAccount) {
+        if (
+          userInfo?.twitterAccount &&
+          !isVerifyingTwitter &&
+          !isVerifyingFarcaster
+        ) {
           return (
             <div className="flex flex-col items-end space-y-1 text-right">
               <div className="flex items-center space-x-2">
@@ -826,7 +867,7 @@ export default function UpdatedAirdropComponent() {
                     </span>
                     <Button
                       onClick={() => handleExternalLink(task.url!)}
-                      className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1"
+                      className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                       title={`Open Twitter to follow`}
                     >
                       Follow <ExternalLink className="w-3 h-3 ml-1" />
@@ -846,40 +887,45 @@ export default function UpdatedAirdropComponent() {
         else {
           return (
             <div className="flex flex-col items-end space-y-1 text-right">
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() =>
-                    handleExternalLink("https://farcaster.xyz/~/settings")
-                  }
-                  className="bg-purple-600 hover:bg-purple-700 text-xs h-6 p-0 px-1 rounded-none text-white"
-                  title="Verify on Farcaster"
-                >
-                  Verify on Farcaster <ExternalLink className="w-3 h-3 ml-1" />
-                </Button>
-                <Button
-                  onClick={() => setShowTwitterInput(!showTwitterInput)}
-                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
-                  title="Add manually"
-                >
-                  {showTwitterInput ? (
-                    <X className="w-3 h-3" />
-                  ) : (
-                    <span>+</span>
-                  )}
-                </Button>
-                <Button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing || !user?.fid}
-                  className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
-                  title="Refresh verification"
-                >
-                  {isRefreshing ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
+              {isVerifyingTwitter || isVerifyingFarcaster ? (
+                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={() =>
+                      handleExternalLink("https://farcaster.xyz/~/settings")
+                    }
+                    className="bg-purple-600 hover:bg-purple-700 text-xs h-6 p-0 px-1 rounded-none text-white"
+                    title="Verify on Farcaster"
+                  >
+                    Verify on Farcaster{" "}
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </Button>
+                  <Button
+                    onClick={() => setShowTwitterInput(!showTwitterInput)}
+                    className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
+                    title="Add manually"
+                  >
+                    {showTwitterInput ? (
+                      <X className="w-3 h-3" />
+                    ) : (
+                      <span>+</span>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleRefresh}
+                    disabled={isRefreshing || !user?.fid}
+                    className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
+                    title="Refresh verification"
+                  >
+                    {isRefreshing ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+              )}
 
               {showTwitterInput && (
                 <div className="mt-2 flex items-center space-x-2 animate-fade-in">
@@ -910,11 +956,13 @@ export default function UpdatedAirdropComponent() {
                 </div>
               )}
 
-              <div className="mt-1">
-                <span className="text-xs text-gray-400">
-                  X account not linked
-                </span>
-              </div>
+              {!isVerifyingTwitter && !isVerifyingFarcaster && (
+                <div className="mt-1">
+                  <span className="text-xs text-gray-400">
+                    X account not linked
+                  </span>
+                </div>
+              )}
 
               {task.verificationError && (
                 <span className="text-xs text-red-400">
@@ -937,12 +985,18 @@ export default function UpdatedAirdropComponent() {
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
                 <span className="text-xs text-green-400">Following</span>
               </div>
+            ) : !isVerifyingTwitter ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-400">
+                  Verifying Twitter...
+                </span>
+              </div>
             ) : (
               <div className="flex items-center space-x-2">
                 <span className="text-xs text-red-400">Not following</span>
                 <Button
                   onClick={() => handleExternalLink(task.url!)}
-                  className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1"
+                  className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 text-white"
                   title={`Open ${task.socialNetwork} to follow`}
                 >
                   Follow <ExternalLink className="w-3 h-3 ml-1" />
@@ -1190,7 +1244,8 @@ export default function UpdatedAirdropComponent() {
   const refreshButton = (
     <Button
       onClick={verifyAllTasks}
-      disabled={isVerifyingAll || !isConnected || balance === null}
+      // disabled={isVerifyingAll || !isConnected || balance === null} // TODO: Uncomment this when we have a balance check
+      disabled={isVerifyingAll}
       className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 border-white/30 border rounded-none text-white"
     >
       {isVerifyingAll ? (

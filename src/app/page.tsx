@@ -72,6 +72,14 @@ const asciiLogoLines = [
   "|__/ |__/ |__/  ______/   ______/ |__/  |__/|__/  |__/|_______/    |__/",                                                                                                                         
   ]; 
 
+type UserWithImage = {
+  id: string;
+  fid?: number;
+  twitterId?: string;
+  twitterHandle?: string;
+  image?: string;
+};
+
 export default function UpdatedAirdropComponent() {
   const { data: session, status: sessionStatus } = useSession();
   const { address, isConnected } = useAccount(); // connector puede ser útil
@@ -672,10 +680,12 @@ export default function UpdatedAirdropComponent() {
                     className="w-12 h-12 animate-bob pointer-events-none neon-moon"
                     style={{ marginBottom: '-12px' }}
                   />
-                  {session && (session.user as any)?.image && (
-                    <img
-                      src={(session.user as any).image}
+                  {session && (session.user as UserWithImage)?.image && (
+                    <Image
+                      src={(session.user as UserWithImage).image!}
                       alt="User"
+                      width={48}
+                      height={48}
                       className="w-12 h-12 animate-bob pointer-events-none neon-moon"
                       style={{ marginBottom: '-12px', marginLeft: '-16px', zIndex: 10 }}
                     />

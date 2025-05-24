@@ -1,6 +1,12 @@
 /** @jsxImportSource react */
 import { ImageResponse } from '@vercel/og';
 
+type NeynarUser = {
+  fid: number;
+  pfp_url: string;
+  follower_count?: number;
+};
+
 export const runtime = 'edge';
 
 async function fetchFont() {
@@ -27,7 +33,7 @@ async function getRelevantFollowers(targetFid: number, viewerFid: number) {
   const data = await res.json();
   return (data?.top_relevant_followers_hydrated ?? [])
     .slice(0, 5)
-    .map((f: any) => f.user.pfp_url);
+    .map((f: { user: NeynarUser }) => f.user.pfp_url);
 }
 
 export async function GET() {
@@ -49,9 +55,10 @@ export async function GET() {
     }
   );
   const bulkData = await bulkRes.json();
-  const followerCount = bulkData.users?.[0]?.follower_count ?? 0;
+  const users: NeynarUser[] = bulkData.users || [];
+  const followerCount = users[0]?.follower_count ?? 0;
   // Try to get the viewer's avatar from Neynar
-  const userAvatar = bulkData.users?.find((u: any) => u.fid === viewerFid)?.pfp_url;
+  const userAvatar = users.find((u) => u.fid === viewerFid)?.pfp_url;
   const avatarSrc = userAvatar || "https://i.ibb.co/QvFx17r6/logo.png";
 
   const fontData = await fetchFont();

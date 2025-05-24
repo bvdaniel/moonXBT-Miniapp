@@ -817,14 +817,14 @@ export default function UpdatedAirdropComponent() {
                   <span className="text-xs text-red-400">Not following</span>
                   <Button
                     onClick={() => handleExternalLink(task.url!)}
-                    className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 text-white"
+                    className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                     title={`Open ${task.socialNetwork} to follow`}
                   >
                     Follow <ExternalLink className="w-3 h-3 ml-1" />
                   </Button>
                   <Button
                     onClick={handleVerifyFarcasterFollow}
-                    className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 text-white"
+                    className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                     disabled={isVerifyingFarcaster || !user?.fid}
                     title="Verify following"
                   >
@@ -833,11 +833,11 @@ export default function UpdatedAirdropComponent() {
                 </div>
               )}
             </div>
-            {task.verificationError && (
+            {/* {task.verificationError && (
               <span className="text-xs text-red-400">
                 {task.verificationError}
               </span>
-            )}
+            )} */}
           </div>
         );
       }
@@ -956,11 +956,13 @@ export default function UpdatedAirdropComponent() {
                 </div>
               )}
 
-              <div className="mt-1">
-                <span className="text-xs text-gray-400">
-                  X account not linked
-                </span>
-              </div>
+              {!isVerifyingTwitter && !isVerifyingFarcaster && (
+                <div className="mt-1">
+                  <span className="text-xs text-gray-400">
+                    X account not linked
+                  </span>
+                </div>
+              )}
 
               {task.verificationError && (
                 <span className="text-xs text-red-400">

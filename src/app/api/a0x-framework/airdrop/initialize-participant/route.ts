@@ -3,11 +3,11 @@ import axios from "axios";
 interface InitializeParticipantBody {
   fid: number;
   username: string;
+  pfpUrl: string;
+  walletAddress: string;
   displayName?: string;
-  pfpUrl?: string;
   isFollowingFarcaster?: boolean;
   twitterAccount?: { username: string; platform: string }; // Opcional
-  walletAddress?: string; // Opcional
 }
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";
@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
     const body: InitializeParticipantBody = await request.json();
 
     // Validate required fields
-    if (!body.fid || !body.username || !body.walletAddress) {
+    if (!body.fid || !body.username || !body.walletAddress || !body.pfpUrl) {
       return NextResponse.json(
-        { error: "fid, username and walletAddress are required" },
+        { error: "fid, username, walletAddress and pfpUrl are required" },
         { status: 400 }
       );
     }

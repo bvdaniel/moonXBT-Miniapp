@@ -205,7 +205,7 @@ export async function generateFarcasterManifest(): Promise<FarcasterManifest> {
     ...(accountAssociation && { accountAssociation }), // Añadir solo si existe
     frame: {
       version: "1",
-      name: process.env.NEXT_PUBLIC_FRAME_NAME || "My Awesome Farcaster App",
+      name: process.env.NEXT_PUBLIC_FRAME_NAME || "MoonXBT-1",
       iconUrl: `${baseUrl}/icon.png`, // Usar baseUrl
       homeUrl: baseUrl, // Usar baseUrl
       splashImageUrl:

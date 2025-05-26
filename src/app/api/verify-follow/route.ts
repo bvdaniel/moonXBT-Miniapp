@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
               isFollowing: a0xData.isFollowing,
               walletAddress: a0xData.walletAddress,
               twitterAccount: a0xData.twitterAccount,
+              pfpUrl: a0xData.farcasterPfpUrl,
               ...a0xData,
             },
             { status: 200 }
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
       username: user.username,
       displayName: user.display_name,
       isFollowing: user.viewer_context.followed_by,
+      profilePicture: user.pfp_url,
       walletAddress:
         user.verified_addresses.primary.eth_address ||
         user.verified_addresses.eth_addresses[0],

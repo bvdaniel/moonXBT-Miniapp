@@ -20,6 +20,8 @@ import { UserContext } from "@farcaster/frame-core/dist/context";
 import Image from "next/image";
 import { FaInstagram, FaTiktok, FaTelegram } from "react-icons/fa";
 import { SiFarcaster } from "react-icons/si";
+import Link from "next/link";
+import LeaderboardTab from "./leaderboard/LeaderboardTab";
 
 // A0X Token Contract ABI - only the balanceOf function
 const tokenABI = [
@@ -101,6 +103,14 @@ const asciiLogoLines = [
   "|__/ |__/ |__/  ______/   ______/ |__/  |__/|__/  |__/|_______/    |__/",
 ];
 
+type UserWithImage = {
+  id: string;
+  fid?: number;
+  twitterId?: string;
+  twitterHandle?: string;
+  image?: string;
+};
+
 export default function UpdatedAirdropComponent() {
   const { address, isConnected } = useAccount(); // connector puede ser útil
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -128,6 +138,8 @@ export default function UpdatedAirdropComponent() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
+  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
+  const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
 
   const {
     data: tokenBalanceData,
@@ -1185,8 +1197,6 @@ export default function UpdatedAirdropComponent() {
     (task) => task.isCompleted
   ).length;
 
-  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
-
   useEffect(() => {
     setAsciiLinesToShow(0);
     let i = 0;
@@ -1656,167 +1666,205 @@ export default function UpdatedAirdropComponent() {
             </div>
           )}
 
-          {/* Farcaster User Info */}
-          {/* {user && (
-            <div className="bg-purple-900/30 rounded-lg p-3 mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-purple-300 flex items-center">
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Farcaster User:
-                </span>
-                <span className="text-white font-medium flex items-center">
-                  {user.username && (
-                    <>
-                      {user.pfpUrl && (
-                        <Image
-                          src={user.pfpUrl}
-                          alt={user.username}
-                          width={24}
-                          height={24}
-                          className="rounded-full mr-2"
-                        />
-                      )}
-                      @{user.username}
-                    </>
-                  )}
-                </span>
-              </div>
-
+          <div className="flex justify-center">
+            <div className="inline-flex overflow-hidden border-2 border-white">
+              <button
+                className={`px-6 py-2 font-bold text-sm tracking-widest select-none ${
+                  activeTab === "tasks"
+                    ? "bg-[#1752F0] text-white"
+                    : "bg-[#1a2b6b] text-blue-200 hover:bg-[#223a8c]"
+                } border-r-2 border-white`}
+                style={{
+                  fontFamily: "Press Start 2P, monospace",
+                  letterSpacing: 2,
+                  borderRadius: 0,
+                }}
+                onClick={() => setActiveTab("tasks")}
+              >
+                TASKS
+              </button>
+              <button
+                className={`px-6 py-2 font-bold text-sm tracking-widest select-none ${
+                  activeTab === "leaderboard"
+                    ? "bg-[#1752F0] text-white"
+                    : "bg-[#1a2b6b] text-blue-200 hover:bg-[#223a8c]"
+                }`}
+                style={{
+                  fontFamily: "Press Start 2P, monospace",
+                  letterSpacing: 2,
+                  borderRadius: 0,
+                }}
+                onClick={() => setActiveTab("leaderboard")}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="inline-block mr-2 align-middle"
+                >
+                  <rect x="3" y="3" width="18" height="14" rx="2" />
+                  <path d="M8 21h8" />
+                  <path d="M12 17v4" />
+                </svg>
+                LEADERBOARD
+              </button>
             </div>
-          )} */}
+          </div>
 
-          {/* Task Sections */}
-          {/* {["Required", "Optional"].map((type) => {
-            const taskList =
-              type === "Required" ? requiredTasks : optionalTasks;
-            if (taskList.length === 0) return null;
-            return (
-              <div key={type} className="space-y-3">
-                <h2 className="text-xl font-semibold text-gray-100 border-b border-gray-700 pb-2 mb-3">
-                  {type} Tasks</h2>
-                  </div>)} */}
-
-          <div className="space-y-8">
-            <div>
-              <div className="relative flex items-center justify-between">
-                <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
-                  REQUIRED TASKS
-                </h2>
+          <div className="min-h-[600px] flex flex-col justify-start">
+            {activeTab === "tasks" ? (
+              <div className="space-y-8">
+                <div>
+                  <div className="relative flex items-center justify-between">
+                    <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
+                      REQUIRED TASKS
+                    </h2>
+                    <Image
+                      src="/moon_mini.png"
+                      alt="Moon"
+                      className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                      width={48}
+                      height={48}
+                      style={{ marginBottom: "-12px" }}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    {requiredTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5"
+                      >
+                        <div className="flex items-center space-x-3">
+                          {task.isCompleted ? (
+                            <span className="text-green-300">[✓]</span>
+                          ) : (
+                            <span className="text-white">[ ]</span>
+                          )}
+                          <div>
+                            <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
+                              {getTaskIcon(task.id)}
+                              {task.title}
+                            </span>
+                            <div className="text-[11px] text-blue-50 break-words max-w-full">
+                              {task.description}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">
+                          {renderTaskButton(task)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="relative flex items-center justify-between">
+                    <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
+                      BONUS TASKS
+                    </h2>
+                  </div>
+                  <div className="space-y-1">
+                    {optionalTasks.map((task) => (
+                      <div
+                        key={task.id}
+                        className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5"
+                      >
+                        <div className="flex items-center space-x-3">
+                          {task.isCompleted ? (
+                            <span className="text-green-300">[✓]</span>
+                          ) : (
+                            <span className="text-white">[ ]</span>
+                          )}
+                          <div>
+                            <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
+                              {getTaskIcon(task.id)}
+                              {task.title}
+                            </span>
+                            <div className="text-[11px] text-blue-50 break-words max-w-full">
+                              {task.description}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">
+                          {renderTaskButton(task)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="w-full flex justify-end">{refreshButton}</div>
+                <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center mt-2 w-full">
+                  <pre className="text-white text-xs mb-2 select-none">
+                    [{"=".repeat(completedRequiredTasks)}
+                    {" ".repeat(requiredTasks.length - completedRequiredTasks)}]{" "}
+                    {completedRequiredTasks}/{requiredTasks.length} Required [
+                    {"=".repeat(completedOptionalTasks)}
+                    {" ".repeat(optionalTasks.length - completedOptionalTasks)}]{" "}
+                    {completedOptionalTasks}/{optionalTasks.length} Bonus
+                  </pre>
+                  <span className="bios-cursor" />
+                </div>
+                <div className="w-full flex flex-col items-center mt-1">
+                  <Button
+                    onClick={handleClaimAirdrop}
+                    disabled={!allRequiredCompleted || isClaiming}
+                    className="w-full bg-green-600 hover:bg-green-700 mt-2"
+                  >
+                    {isClaiming ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        Claiming...
+                      </>
+                    ) : (
+                      "Claim Airdrop"
+                    )}
+                  </Button>
+                  {claimMessage && (
+                    <div
+                      className={`mt-2 text-sm ${
+                        claimMessage.includes("Error") ||
+                        claimMessage.includes("Failed")
+                          ? "text-red-400"
+                          : "text-green-400"
+                      }`}
+                    >
+                      {claimMessage}
+                    </div>
+                  )}
+                  {/* <div>
+          <div className="relative flex items-center justify-between mb-2 w-full">
+            <div />
+            <div className="flex items-center">
+              <img
+                src="/moon_mini.png"
+                alt="Moon"
+                className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                style={{ marginBottom: '-12px' }}
+              />
+              {session && (session.user as UserWithImage)?.image && (
                 <Image
-                  src="/moon_mini.png"
-                  alt="Moon"
-                  className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                  src={(session.user as UserWithImage).image!}
+                  alt="User"
                   width={48}
                   height={48}
-                  style={{ marginBottom: "-12px" }}
+                  className="w-12 h-12 animate-bob pointer-events-none neon-moon"
+                  style={{ marginBottom: '-12px', marginLeft: '-16px', zIndex: 10 }}
                 />
-              </div>
-              <div className="space-y-1">
-                {requiredTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5"
-                  >
-                    <div className="flex items-center space-x-3">
-                      {task.isCompleted ? (
-                        <span className="text-green-300">[✓]</span>
-                      ) : (
-                        <span className="text-white">[ ]</span>
-                      )}
-                      <div>
-                        <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
-                          {getTaskIcon(task.id)}
-                          {task.title}
-                        </span>
-                        <div className="text-[11px] text-blue-50 break-words max-w-full">
-                          {task.description}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">
-                      {renderTaskButton(task)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="relative flex items-center justify-between">
-                <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
-                  BONUS TASKS
-                </h2>
-              </div>
-              <div className="space-y-1">
-                {optionalTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5"
-                  >
-                    <div className="flex items-center space-x-3">
-                      {task.isCompleted ? (
-                        <span className="text-green-300">[✓]</span>
-                      ) : (
-                        <span className="text-white">[ ]</span>
-                      )}
-                      <div>
-                        <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
-                          {getTaskIcon(task.id)}
-                          {task.title}
-                        </span>
-                        <div className="text-[11px] text-blue-50 break-words max-w-full">
-                          {task.description}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-end">
-                      {renderTaskButton(task)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="w-full flex justify-end">{refreshButton}</div>
-            <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center mt-2 w-full">
-              <pre className="text-white text-xs mb-2 select-none">
-                [{"=".repeat(completedRequiredTasks)}
-                {" ".repeat(
-                  requiredTasks.length - completedRequiredTasks
-                )}] {completedRequiredTasks}/{requiredTasks.length} Required [
-                {"=".repeat(completedOptionalTasks)}
-                {" ".repeat(
-                  optionalTasks.length - completedOptionalTasks
-                )}] {completedOptionalTasks}/{optionalTasks.length} Bonus
-              </pre>
-              <span className="bios-cursor" />
-            </div>
-            <div className="w-full flex flex-col items-center mt-1">
-              <Button
-                onClick={handleClaimAirdrop}
-                disabled={!allRequiredCompleted || isClaiming}
-                className="w-full bg-green-600 hover:bg-green-700 mt-2"
-              >
-                {isClaiming ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                    Claiming...
-                  </>
-                ) : (
-                  "Claim Airdrop"
-                )}
-              </Button>
-              {claimMessage && (
-                <div
-                  className={`mt-2 text-sm ${
-                    claimMessage.includes("Error") ||
-                    claimMessage.includes("Failed")
-                      ? "text-red-400"
-                      : "text-green-400"
-                  }`}
-                >
-                  {claimMessage}
-                </div>
               )}
-            </div>
+              </div>
+            </div> */}
+
+                  {/* Tab Switcher */}
+                </div>
+              </div>
+            ) : (
+              <LeaderboardTab />
+            )}
           </div>
         </div>
       </div>

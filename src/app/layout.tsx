@@ -1,14 +1,13 @@
 "use client";
 
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { WagmiProvider } from "wagmi";
 import { config } from "@/config/wagmi";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { sdk } from "@farcaster/frame-sdk";
-import { useEffect } from "react";
-import { SessionProvider } from "next-auth/react";
 import { AuthKitProvider } from "@farcaster/auth-kit";
+import { sdk } from "@farcaster/frame-sdk";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Inter } from "next/font/google";
+import { useEffect } from "react";
+import { WagmiProvider } from "wagmi";
+import "./globals.css";
 const farcasterAuthConfig = {
   rpcUrl: "https://mainnet.optimism.io", // o tu RPC de Optimism
   domain: process.env.NEXT_PUBLIC_URL || "localhost:3000", // Asegúrate que coincida
@@ -25,7 +24,7 @@ export default function RootLayout({
 }) {
   useEffect(() => {
     // Call ready when the interface is ready to be displayed
-    sdk.actions.ready({ disableNativeGestures: true });
+    sdk.actions.ready();
   }, []);
 
   return (
@@ -39,11 +38,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryClientProvider client={queryClient}>
           <WagmiProvider config={config}>
-            <SessionProvider>
-              <AuthKitProvider config={farcasterAuthConfig}>
-                {children}
-              </AuthKitProvider>
-            </SessionProvider>
+            <AuthKitProvider config={farcasterAuthConfig}>
+              {children}
+            </AuthKitProvider>
           </WagmiProvider>
         </QueryClientProvider>
       </body>

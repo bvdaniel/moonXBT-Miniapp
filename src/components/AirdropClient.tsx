@@ -1754,7 +1754,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         sellAmount: "10000000", // 10 USDC
       });
 
-      if (result.success) {
+      if (result.success && user?.fid) {
         console.log("Swap successful:", result.swap.transactions);
 
         // Actualizar el balance en el backend
@@ -1765,6 +1765,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                farcasterFid: user.fid,
                 walletAddress: address,
                 transactions: result.swap.transactions,
                 timestamp: new Date().toISOString(),
@@ -1783,7 +1784,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           console.error("Error calling update-balance endpoint:", updateError);
         }
       } else {
-        console.error("Swap failed:", result.reason, result.error);
+        console.error("Swap failed:", result);
       }
     } catch (error) {
       console.error("Error initiating swap:", error);
@@ -1800,6 +1801,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            farcasterFid: user?.fid,
             walletAddress: address,
             transactions: [], // No hay transacciones específicas, solo actualización de balance
             timestamp: new Date().toISOString(),

@@ -1,5 +1,11 @@
 "use client";
 import { Button } from "@/components/ui/Button"; // Asegúrate que esta ruta es correcta
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import sdk from "@farcaster/frame-sdk";
 import {
   CheckCircle2,
@@ -11,6 +17,7 @@ import {
   Send,
   X,
   RefreshCw,
+  Info,
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { formatEther } from "viem";
@@ -35,7 +42,12 @@ const tokenABI = [
 ] as const;
 
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
-const MIN_A0X_REQUIRED = 100;
+const MIN_A0X_REQUIRED = 10_000_000;
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
+
+const parseTextMillion = (amount: number) => {
+  return `${amount / 1_000_000}M`;
+};
 
 interface Task {
   id: string;
@@ -55,8 +67,10 @@ interface Task {
   url?: string;
   icon: React.ReactNode;
   targetUsername?: string;
-  verificationError?: string | null; // Para mostrar errores específicos de la tarea
+  verificationError?: string | null;
   action?: () => void;
+  points: number;
+  pointsDescription?: string;
 }
 
 interface VerificationResult {
@@ -114,7 +128,7 @@ type UserWithImage = {
 export default function AirdropClient() {
   const { address, isConnected } = useAccount(); // connector puede ser útil
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [isVerifyingAll, setIsVerifyingAll] = useState(false); // Renombrado para claridad
+  const [isVerifyingAll, setIsVerifyingAll] = useState(false);
   const [balance, setBalance] = useState<string | null>(null);
   const [user, setUser] = useState<UserContext | null>(null);
   const [isVerifyingFarcaster, setIsVerifyingFarcaster] = useState(false);
@@ -402,13 +416,17 @@ export default function AirdropClient() {
       {
         id: "hold-a0x",
         title: "Hold A0X Tokens",
-        description: `Hold at least ${MIN_A0X_REQUIRED} A0X tokens`,
+        description: `Hold at least ${parseTextMillion(
+          MIN_A0X_REQUIRED
+        )} A0X tokens`,
         socialNetwork: "a0x",
         isRequired: true,
         isCompleted: false,
         needsAuth: false,
         icon: <Circle className="w-5 h-5 text-yellow-500" />,
         verificationError: null,
+        points: 10,
+        pointsDescription: "10 points for holding 10M A0X, +1 point per 1M A0X",
       },
       {
         id: "follow-farcaster",
@@ -422,6 +440,7 @@ export default function AirdropClient() {
         targetUsername: "ai420z",
         icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
         verificationError: null,
+        points: 100,
       },
       {
         id: "follow-twitter",
@@ -443,6 +462,7 @@ export default function AirdropClient() {
           />
         ),
         verificationError: null,
+        points: 100,
       },
       {
         id: "follow-tiktok",
@@ -450,12 +470,13 @@ export default function AirdropClient() {
         description: "Follow @moonxbt.fun",
         socialNetwork: "tiktok",
         isRequired: false,
-        isCompleted: false, // Asumimos que no se verifica automáticamente
+        isCompleted: false,
         needsAuth: false,
         url: "https://www.tiktok.com/@moonxbt.fun",
         icon: <Play className="w-5 h-5 text-red-500" />,
         verificationError: null,
         targetUsername: "@moonxbt.fun",
+        points: 100,
       },
       {
         id: "follow-instagram",
@@ -463,7 +484,7 @@ export default function AirdropClient() {
         description: "Follow @moonxbt",
         socialNetwork: "instagram",
         isRequired: false,
-        isCompleted: false, // Asumimos que no se verifica automáticamente
+        isCompleted: false,
         needsAuth: false,
         url: "https://www.instagram.com/moonxbt/",
         icon: (
@@ -479,6 +500,7 @@ export default function AirdropClient() {
         ),
         verificationError: null,
         targetUsername: "moonxbt",
+        points: 100,
       },
       {
         id: "join-telegram",
@@ -486,12 +508,56 @@ export default function AirdropClient() {
         description: "Join A0X Portal group",
         socialNetwork: "telegram",
         isRequired: false,
-        isCompleted: false, // Asumimos que no se verifica automáticamente
+        isCompleted: false,
         needsAuth: false,
         url: "https://t.me/A0X_Portal",
         icon: <Send className="w-5 h-5 text-blue-500" />,
         verificationError: null,
         targetUsername: "A0X_Portal",
+        points: 100,
+      },
+      {
+        id: "share-miniapp",
+        title: "Share Mini App",
+        description: "Share the mini app on Farcaster",
+        socialNetwork: "farcaster",
+        isRequired: false,
+        isCompleted: false,
+        needsAuth: false,
+        icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
+        verificationError: null,
+        points: 100,
+        action: async () => {
+          if (user?.fid) {
+            try {
+              const result = await sdk.actions.composeCast({
+                text: "I'm participating in $moonXBT airdrop, the first autonomous content creator on Base",
+                embeds: [
+                  `https://miniapps.farcaster.xyz/moonXBT?sharedFid=${user.fid}`,
+                ],
+              });
+
+              if (result?.cast) {
+                setTasks((prevTasks) =>
+                  prevTasks.map((task) =>
+                    task.id === "share-miniapp"
+                      ? { ...task, isCompleted: true }
+                      : task
+                  )
+                );
+              }
+            } catch (error) {
+              console.error("Error sharing mini app:", error);
+              setTasks((prevTasks) =>
+                prevTasks.map((task) =>
+                  task.id === "share-miniapp"
+                    ? { ...task, verificationError: "Error sharing mini app" }
+                    : task
+                )
+              );
+            }
+          }
+        },
       },
       {
         id: "follow-zora",
@@ -512,6 +578,7 @@ export default function AirdropClient() {
           />
         ),
         verificationError: null,
+        points: 100,
       },
     ]);
   }, []);
@@ -529,6 +596,9 @@ export default function AirdropClient() {
       const balanceNum = Number(formatEther(tokenBalanceData));
       setBalance(balanceNum.toString());
 
+      // Calcular puntos basados en el balance de A0X
+      const points = Math.min(10, Math.floor(balanceNum / 1000000)); // 1 punto por millón, máximo 10 puntos
+
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task.id === "hold-a0x"
@@ -536,6 +606,8 @@ export default function AirdropClient() {
                 ...task,
                 isCompleted: balanceNum >= MIN_A0X_REQUIRED,
                 verificationError: null,
+                points: points,
+                pointsDescription: `Current points: ${points} (${balanceNum.toLocaleString()} A0X)`,
               }
             : task
         )
@@ -780,32 +852,70 @@ export default function AirdropClient() {
           )}
           {!isLoadingTokenBalance && (
             <>
-              <span
-                className={`text-sm font-medium ${
-                  task.isCompleted
-                    ? "text-green-400"
-                    : balance !== null
-                    ? "text-red-400"
-                    : "text-gray-400"
-                }`}
-              >
-                {balance !== null
-                  ? `${Number(
-                      balance
-                    ).toLocaleString()} / ${MIN_A0X_REQUIRED} A0X`
-                  : isConnected
-                  ? "Loading..."
-                  : "Wallet not connected"}{" "}
-              </span>
-              {task.isCompleted && (
-                <CheckCircle2 className="w-5 h-5 text-green-500" />
-              )}
+              <div className="flex items-center space-x-2">
+                <span
+                  className={`text-sm font-medium ${
+                    task.isCompleted
+                      ? "text-green-400"
+                      : balance !== null
+                      ? "text-red-400"
+                      : "text-gray-400"
+                  }`}
+                >
+                  {balance !== null
+                    ? `${parseTextMillion(
+                        Number(balance)
+                      )} / ${parseTextMillion(MIN_A0X_REQUIRED)} A0X`
+                    : isConnected
+                    ? "Loading..."
+                    : "Wallet not connected"}{" "}
+                </span>
+                {task.isCompleted && (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                )}
+                <Button
+                  onClick={handleBuyA0X}
+                  className="bg-green-600 hover:bg-green-700 text-xs rounded-none h-6 p-0 px-1 text-white"
+                  disabled={!isConnected}
+                >
+                  Buy A0X
+                </Button>
+              </div>
               {task.verificationError && (
                 <span className="text-xs text-red-400">
                   {task.verificationError}
                 </span>
               )}
             </>
+          )}
+        </div>
+      );
+    }
+
+    if (task.id === "share-miniapp") {
+      return (
+        <div className="flex flex-col items-end space-y-1 text-right">
+          <div className="flex items-center space-x-2">
+            {task.isCompleted ? (
+              <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                <span className="text-xs text-green-400">Shared</span>
+              </div>
+            ) : (
+              <Button
+                onClick={task.action}
+                className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
+                disabled={!user?.fid}
+                title="Share on Farcaster"
+              >
+                Share <ExternalLink className="w-3 h-3 ml-1" />
+              </Button>
+            )}
+          </div>
+          {task.verificationError && (
+            <span className="text-xs text-red-400">
+              {task.verificationError}
+            </span>
           )}
         </div>
       );
@@ -1626,6 +1736,105 @@ export default function AirdropClient() {
     }
   };
 
+  const handleBuyA0X = async () => {
+    try {
+      // @ts-expect-error - swapToken existe en el SDK pero no está tipado correctamente
+      const result = await sdk.actions.swapToken({
+        sellToken: `eip155:8453/erc20:${USDC_ADDRESS}`,
+        buyToken: `eip155:8453/erc20:${A0X_TOKEN_ADDRESS}`,
+        sellAmount: "10000000", // 10 USDC
+      });
+
+      if (result.success) {
+        console.log("Swap successful:", result.swap.transactions);
+
+        // Actualizar el balance en el backend
+        try {
+          const updateResponse = await fetch(
+            "/api/a0x-framework/airdrop/update-balance",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                walletAddress: address,
+                transactions: result.swap.transactions,
+                timestamp: new Date().toISOString(),
+                currentBalance: balance,
+              }),
+            }
+          );
+
+          if (!updateResponse.ok) {
+            console.error(
+              "Error updating balance in backend:",
+              await updateResponse.json()
+            );
+          }
+        } catch (updateError) {
+          console.error("Error calling update-balance endpoint:", updateError);
+        }
+      } else {
+        console.error("Swap failed:", result.reason, result.error);
+      }
+    } catch (error) {
+      console.error("Error initiating swap:", error);
+    }
+  };
+
+  const verifyA0XBalance = useCallback(async () => {
+    if (!address || !isConnected) return;
+
+    try {
+      const response = await fetch(
+        "/api/a0x-framework/airdrop/update-balance",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: address,
+            transactions: [], // No hay transacciones específicas, solo actualización de balance
+            timestamp: new Date().toISOString(),
+            currentBalance: balance,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Balance updated in backend:", data);
+
+        // Actualizar el estado de la tarea si el balance es suficiente
+        if (data.dataReceived?.tasks?.["hold-a0x"]?.completed) {
+          setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task.id === "hold-a0x"
+                ? {
+                    ...task,
+                    isCompleted: true,
+                    verificationError: null,
+                  }
+                : task
+            )
+          );
+        }
+      } else {
+        console.error(
+          "Error updating balance in backend:",
+          await response.json()
+        );
+      }
+    } catch (error) {
+      console.error("Error verifying A0X balance:", error);
+    }
+  }, [address, isConnected, setTasks, balance]);
+
+  // Agregar un efecto para verificar el balance cuando cambia
+  useEffect(() => {
+    if (balance !== null && isConnected) {
+      verifyA0XBalance();
+    }
+  }, [balance, isConnected, verifyA0XBalance]);
+
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
       {/* Video background */}
@@ -1749,6 +1958,19 @@ export default function AirdropClient() {
                             <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
                               {getTaskIcon(task.id)}
                               {task.title}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="w-3 h-3 ml-1 text-blue-300 cursor-help hover:text-blue-200" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gray-900 border border-gray-700">
+                                    <p className="text-white text-xs">
+                                      {task.pointsDescription ||
+                                        `${task.points} points for completing this task`}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </span>
                             <div className="text-[11px] text-blue-50 break-words max-w-full">
                               {task.description}
@@ -1784,6 +2006,19 @@ export default function AirdropClient() {
                             <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
                               {getTaskIcon(task.id)}
                               {task.title}
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="w-3 h-3 ml-1 text-blue-300 cursor-help hover:text-blue-200" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="bg-gray-900 border border-gray-700">
+                                    <p className="text-white text-xs">
+                                      {task.pointsDescription ||
+                                        `${task.points} points for completing this task`}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </span>
                             <div className="text-[11px] text-blue-50 break-words max-w-full">
                               {task.description}

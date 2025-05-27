@@ -166,7 +166,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     isLoading: isLoadingTokenBalance,
     error: tokenBalanceError,
   } = useReadContract({
+    chainId: 8453,
     address: A0X_TOKEN_ADDRESS,
+    // address: USDC_ADDRESS,
     abi: tokenABI,
     functionName: "balanceOf",
     args: [address as `0x${string}`],
@@ -489,12 +491,12 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       {
         id: "follow-instagram",
         title: "Follow on Instagram (Optional)",
-        description: "Follow @moonxbt",
+        description: "Follow @moonxbt_ai",
         socialNetwork: "instagram",
         isRequired: false,
         isCompleted: false,
         needsAuth: false,
-        url: "https://www.instagram.com/moonxbt/",
+        url: "https://www.instagram.com/moonxbt_ai/",
         icon: (
           <svg
             role="img"
@@ -507,7 +509,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           </svg>
         ),
         verificationError: null,
-        targetUsername: "moonxbt",
+        targetUsername: "moonxbt_ai",
         points: 100,
       },
       {
@@ -600,7 +602,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   // Update balance and A0X task
   useEffect(() => {
-    if (tokenBalanceData) {
+    if (tokenBalanceData !== undefined) {
       const balanceNum = Number(formatEther(tokenBalanceData));
       setBalance(balanceNum.toString());
 
@@ -1746,7 +1748,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   const handleBuyA0X = async () => {
     try {
-      // @ts-expect-error - swapToken existe en el SDK pero no está tipado correctamente
       const result = await sdk.actions.swapToken({
         sellToken: `eip155:8453/erc20:${USDC_ADDRESS}`,
         buyToken: `eip155:8453/erc20:${A0X_TOKEN_ADDRESS}`,
@@ -1859,7 +1860,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       <div className="scanline pointer-events-none absolute inset-0 z-10" />
       <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-2 sm:px-4 py-4">
         <div className="relative w-full flex justify-center items-center">
-          <pre className="text-white text-[5px] sm:text-[7px] leading-none mb-1 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest overflow-x-auto whitespace-pre max-w-full">
+          <pre className="text-white text-[5px] md:text-[7px] leading-none mb-1 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest overflow-x-auto whitespace-pre max-w-full">
             {asciiLogoLines.slice(0, asciiLinesToShow).join("\n")}
           </pre>
         </div>

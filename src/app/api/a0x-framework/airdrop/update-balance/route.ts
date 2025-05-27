@@ -45,15 +45,11 @@ export async function POST(request: NextRequest) {
     // Preparar el payload para el backend de A0X
     const payload = {
       walletAddress: body.walletAddress,
-      tasks: {
-        "hold-a0x": {
-          verifiedAt: body.timestamp,
-          lastTransaction: body.transactions[0]?.hash || null,
-          currentBalance: body.currentBalance
-            ? Number(body.currentBalance)
-            : undefined,
-        } as A0XTokenTaskUpdate,
-      },
+      transactions: body.transactions,
+      timestamp: body.timestamp,
+      currentBalance: body.currentBalance
+        ? Number(body.currentBalance)
+        : undefined,
     };
 
     const response = await axios.post(

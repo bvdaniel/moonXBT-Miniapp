@@ -20,17 +20,14 @@ async function getUserInfo(fid: number) {
   }
 }
 export async function generateMetadata({
-  searchParams, // This `searchParams` prop itself needs to be awaited
+  searchParams,
 }: {
-  // The type signature describes the shape of the *resolved* searchParams object
   searchParams: { [key: string]: string | string[] | undefined };
 }): Promise<Metadata> {
-  // Await the searchParams object to access its properties
-  const resolvedSearchParams = await searchParams;
-
-  let rawFid = resolvedSearchParams.sharedFid;
+  const params = await Promise.resolve(searchParams);
+  let rawFid = params.sharedFid;
   if (Array.isArray(rawFid)) {
-    rawFid = rawFid[0]; // Use the first value if it's an array
+    rawFid = rawFid[0];
   }
 
   const sharedFid = rawFid ? parseInt(rawFid, 10) : null;
@@ -39,7 +36,7 @@ export async function generateMetadata({
   let sharedImage = null;
 
   if (sharedFid) {
-    initialUserInfo = await getUserInfo(sharedFid); // This remains async
+    initialUserInfo = await getUserInfo(sharedFid);
     initialPoints = initialUserInfo?.points || 100;
     sharedImage = initialUserInfo?.farcasterPfpUrl || null;
   }
@@ -49,7 +46,7 @@ export async function generateMetadata({
   const frame = {
     version: "next",
     imageUrl: `${appUrl}/api/og?points=${initialPoints}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
-      sharedImage
+      sharedImage || "https://i.ibb.co/QvFx17r6/logo.png"
     )}`,
     button: {
       title: "Join MoonXBT",
@@ -71,7 +68,7 @@ export async function generateMetadata({
       images: [
         {
           url: `${appUrl}/api/og?points=${initialPoints}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
-            sharedImage
+            sharedImage || "https://i.ibb.co/QvFx17r6/logo.png"
           )}`,
           width: 1500,
           height: 1000,
@@ -84,17 +81,23 @@ export async function generateMetadata({
   };
 }
 export default async function Page({
-  searchParams, // This `searchParams` prop itself needs to be awaited
+  searchParams,
 }: {
-  // The type signature describes the shape of the *resolved* searchParams object
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  // Await the searchParams object to access its properties
-  const resolvedSearchParams = await searchParams;
-
-  let rawFid = resolvedSearchParams.sharedFid;
+  const params = await Promise.resolve(searchParams);
+  let rawFid = params.sharedFid;
   if (Array.isArray(rawFid)) {
-    rawFid = rawFid[0]; // Use the first value if it's an array
+    rawFid = rawFid[0];
+  }
+
+  const sharedFid = rawFid ? parseInt(rawFid, 10) : null;
+  let initialUserInfo = null;
+  let initialPoints = 100;
+
+  if (sharedFid) {
+    initialUserInfo = await getUserInfo(sharedFid);
+    initialPoints = initialUserInfo?.points || 100;
   }
 
   return <AirdropClient />;

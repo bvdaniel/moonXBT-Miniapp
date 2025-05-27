@@ -1835,13 +1835,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             </p>
           </div>
           {isConnected && balance !== null && (
-            <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 my-1 relative text-center w-full">
-              <div className="font-mono text-white text-lg">
-                <span className="text-blue-200">Your $A0X Balance:</span>
-                <span className="ml-2 text-white font-bold">
-                  {Number(balance).toLocaleString()} A0X
-                </span>
-              </div>
+            <div className="w-full flex flex-col items-center my-3">
+              <span className="text-blue-100 text-xs tracking-widest mb-1">
+                Your $A0X Balance
+              </span>
+              <span className="text-white font-extrabold text-2xl sm:text-3xl bg-gradient-to-r from-blue-200 via-white to-blue-100 bg-clip-text text-transparent">
+                {Number(balance).toLocaleString()} <span className="text-blue-200 text-lg">A0X</span>
+              </span>
+              <div className="w-1/2 h-px bg-blue-100/30 mt-2" />
             </div>
           )}
 

@@ -541,7 +541,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               const result = await sdk.actions.composeCast({
                 text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${userPoints} points so far!`,
                 embeds: [
-                  `https://miniapps.farcaster.xyz/moonXBT?sharedFid=${user.fid}`,
+                  `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
                 ],
               });
 

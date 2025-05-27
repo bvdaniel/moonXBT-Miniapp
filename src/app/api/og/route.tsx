@@ -17,9 +17,9 @@ async function fetchFont() {
   return fontRes.arrayBuffer();
 }
 
-async function getRelevantFollowers(targetFid: number) {
+async function getRelevantFollowers(targetFid: number, viewerFid: number) {
   const res = await fetch(
-    `https://api.neynar.com/v2/farcaster/followers/relevant?target_fid=${targetFid}`,
+    `https://api.neynar.com/v2/farcaster/followers/relevant?target_fid=${targetFid}&viewer_fid=${viewerFid}`,
     {
       headers: {
         accept: "application/json",
@@ -204,12 +204,15 @@ async function getRelevantFollowers(targetFid: number) {
 export async function GET(request: Request) {
   const moonxbtFid = 900682;
   const { searchParams } = new URL(request.url);
+  const viewerFid = searchParams.get("viewerFid") || "12785";
   const points = searchParams.get("points") || "100";
   const pfpUrl =
     searchParams.get("pfpUrl") || "https://i.ibb.co/QvFx17r6/logo.png";
 
   // Get relevant avatars
-  const avatars = await getRelevantFollowers(moonxbtFid);
+  const avatars = await getRelevantFollowers(moonxbtFid, Number(viewerFid));
+
+  console.log("avatars", avatars);
 
   // Get MoonXBT's true follower count using the bulk endpoint
   const bulkRes = await fetch(
@@ -262,8 +265,6 @@ export async function GET(request: Request) {
   const followerCount = users[0]?.follower_count ?? 0;
 
   const fontData = await fetchFont();
-
-  console.log("points", points);
 
   return new ImageResponse(
     (

@@ -104,7 +104,5 @@ export default async function Page({
     initialPoints = initialUserInfo?.points || 100;
   }
 
-  console.log("sharedFid", sharedFid);
-
   return <AirdropClient sharedFid={sharedFid} />;
 }

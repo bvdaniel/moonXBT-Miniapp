@@ -38,9 +38,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (refresh !== "true") {
+    // Validar el parámetro refresh como booleano
+    const shouldRefresh = refresh === "true";
+    console.log("shouldRefresh:", shouldRefresh);
+
+    if (!shouldRefresh) {
+      console.log("Entrando en verificación A0X");
       try {
         const a0xApiUrl = `${A0X_AGENT_API_URL}/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+        console.log("URL A0X:", a0xApiUrl);
 
         const a0xResponse = await fetch(a0xApiUrl, {
           headers: {
@@ -48,25 +54,30 @@ export async function GET(request: NextRequest) {
           },
         });
 
-        if (a0xResponse.ok) {
-          const a0xData = await a0xResponse.json();
+        const a0xData = await a0xResponse.json();
+        console.log("a0xData completo:", JSON.stringify(a0xData, null, 2));
+        console.log("a0xData.success:", a0xData?.success);
+
+        if (a0xData && a0xData.success) {
+          console.log("Retornando respuesta A0X exitosa");
           return NextResponse.json(
             {
-              fid: a0xData.fid,
-              username: a0xData.username,
-              displayName: a0xData.displayName,
-              isFollowing: a0xData.isFollowing,
-              walletAddress: a0xData.walletAddress,
-              twitterAccount: a0xData.twitterAccount,
-              pfpUrl: a0xData.farcasterPfpUrl,
               ...a0xData,
             },
             { status: 200 }
           );
+        } else {
+          console.log("A0X no fue exitoso, continuando con el flujo normal");
         }
       } catch (error) {
-        console.error("Error verifying follow status:", error);
+        console.error("Error verificando A0X:", error);
+        return NextResponse.json(
+          { error: "Error checking A0X status" },
+          { status: 500 }
+        );
       }
+    } else {
+      console.log("Refresh es true, saltando verificación A0X");
     }
 
     const moonxbtFid = 900682;
@@ -106,6 +117,8 @@ export async function GET(request: NextRequest) {
       (account: VerifiedAccount) =>
         account.platform === "x" || account.platform === "twitter"
     );
+
+    console.log("user", user);
 
     // Return consolidated user data
     return NextResponse.json({

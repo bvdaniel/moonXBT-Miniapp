@@ -223,6 +223,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("data", data);
         setUserInfo(data);
         setUserPoints(data.points || 0); // Actualizar los puntos cuando recibimos la información
 
@@ -608,18 +609,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   // Verify all tasks when session, wallet, or balance changes
   // Only if there's a session, wallet connected, and balance available
-  useEffect(() => {
-    if (address && balance !== null) {
-      verifyAllTasks();
-    }
-  }, [address, balance]);
+  // useEffect(() => {
+  //   if (address && balance !== null) {
+  //     verifyAllTasks();
+  //   }
+  // }, [address, balance]);
 
   const verifyAllTasks = useCallback(async () => {
     setIsVerifyingAll(true);
     try {
       if (user?.fid) {
         // Verificar Farcaster
-        await verifyFarcasterFollow(user.fid, true);
+        await verifyFarcasterFollow(user.fid);
 
         // Si hay una cuenta de Twitter, verificar también
         if (userInfo?.twitterAccount) {
@@ -1848,6 +1849,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       verifyA0XBalance();
     }
   }, [balance, isConnected, verifyA0XBalance]);
+
+  console.log(userInfo);
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">

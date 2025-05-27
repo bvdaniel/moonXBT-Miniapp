@@ -19,8 +19,8 @@ import {
   RefreshCw,
   Info,
 } from "lucide-react";
-import { useEffect, useState, useCallback } from "react";
-import { formatEther } from "viem";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { formatEther, parseUnits } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 
 import { UserContext } from "@farcaster/frame-core/dist/context";
@@ -44,6 +44,7 @@ const tokenABI = [
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
 const MIN_A0X_REQUIRED = 10_000_000;
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
+const TOKEN_DECIMALS = 18;
 
 const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
@@ -161,6 +162,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
   const [userPoints, setUserPoints] = useState<number>(0); // Nuevo estado para los puntos
 
+  const lastBalanceRef = useRef<string | null>(null);
+  const lastPointsRef = useRef<number | null>(null);
+
   const {
     data: tokenBalanceData,
     isLoading: isLoadingTokenBalance,
@@ -168,13 +172,12 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   } = useReadContract({
     chainId: 8453,
     address: A0X_TOKEN_ADDRESS,
-    // address: USDC_ADDRESS,
     abi: tokenABI,
     functionName: "balanceOf",
     args: [address as `0x${string}`],
     query: {
       enabled: !!address && isConnected,
-      refetchInterval: 15000, // Opcional: refrescar balance periódicamente
+      refetchInterval: false, // Desactivamos la actualización automática
     },
   });
 
@@ -574,39 +577,38 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   // Update balance and A0X task
   useEffect(() => {
     if (tokenBalanceData !== undefined) {
-      const balanceNum = Number(formatEther(tokenBalanceData));
-      setBalance(balanceNum.toString());
+      const balanceInWei = BigInt(tokenBalanceData);
+      const balanceInEther = Number(formatEther(balanceInWei));
+      const balanceStr = balanceInEther.toString();
 
-      // Calcular puntos basados en el balance de A0X
-      const points = Math.floor(balanceNum / 1000000); // 1 punto por millón, sin límite máximo
+      // Solo actualizar si el balance ha cambiado
+      if (balanceStr !== lastBalanceRef.current) {
+        lastBalanceRef.current = balanceStr;
+        setBalance(balanceStr);
 
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "hold-a0x"
-            ? {
-                ...task,
-                isCompleted: balanceNum >= MIN_A0X_REQUIRED,
-                verificationError: null,
-                points: points,
-                pointsDescription: `Current points: ${points} (${balanceNum.toLocaleString()} A0X)`,
-              }
-            : task
-        )
-      );
-    } else if (tokenBalanceError) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "hold-a0x"
-            ? {
-                ...task,
-                isCompleted: false,
-                verificationError: "Error fetching balance.",
-              }
-            : task
-        )
-      );
+        // Calcular puntos basados en el balance de A0X
+        const points = Math.floor(balanceInEther / 1000000); // 1 punto por millón, sin límite máximo
+
+        // Solo actualizar tareas si los puntos han cambiado
+        if (points !== lastPointsRef.current) {
+          lastPointsRef.current = points;
+          setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+              task.id === "hold-a0x"
+                ? {
+                    ...task,
+                    isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
+                    verificationError: null,
+                    points: points,
+                    pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
+                  }
+                : task
+            )
+          );
+        }
+      }
     }
-  }, [tokenBalanceData, tokenBalanceError, address]);
+  }, [tokenBalanceData]);
 
   // Verify all tasks when session, wallet, or balance changes
   // Only if there's a session, wallet connected, and balance available
@@ -700,62 +702,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       setIsVerifyingAll(false);
     }
   }, [user?.fid, userInfo, tasks]);
-
-  const updateTasksFromVerification = async (results: VerificationResult[]) => {
-    try {
-      const updatedTasks = await Promise.all(
-        tasks.map(async (task) => {
-          const result = results.find((r) => r.taskId === task.id);
-          if (result) {
-            return {
-              ...task,
-              isCompleted: result.isCompleted,
-              verificationError: result.error || null,
-            };
-          }
-
-          if (task.id === "hold-a0x") return task;
-
-          if (task.id === "follow-twitter" && userInfo?.twitterAccount) {
-            if (userInfo.tasks["follow-twitter"]?.completed === true) {
-              return {
-                ...task,
-                isCompleted: true,
-                verificationError: null,
-              };
-            } else if (user?.fid) {
-              try {
-                const verificationResult = await verifyTwitterFollow(
-                  user.fid,
-                  userInfo.twitterAccount,
-                  tasks.find((t) => t.id === "follow-twitter")
-                    ?.targetUsername || "",
-                  userInfo.walletAddress
-                );
-                return {
-                  ...task,
-                  ...verificationResult,
-                };
-              } catch (error) {
-                console.error("Error verifying Twitter follow:", error);
-                return {
-                  ...task,
-                  isCompleted: false,
-                  verificationError: "Error verifying follow status",
-                };
-              }
-            }
-          }
-
-          return { ...task, verificationError: null };
-        })
-      );
-
-      setTasks(updatedTasks);
-    } catch (error) {
-      console.error("Error updating tasks:", error);
-    }
-  };
 
   const handleExternalLink = (url: string) => {
     sdk.actions.openUrl(url);
@@ -1821,6 +1767,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
         // Actualizar el estado de la tarea si el balance es suficiente
         if (data.dataReceived?.tasks?.["hold-a0x"]?.completed) {
+          const balanceInEther = Number(
+            data.dataReceived.tasks["hold-a0x"].currentBalance
+          );
+          const points = Math.floor(balanceInEther / 1000000); // 1 punto por millón, sin límite máximo
           setTasks((prevTasks) =>
             prevTasks.map((task) =>
               task.id === "hold-a0x"
@@ -1828,6 +1778,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     ...task,
                     isCompleted: true,
                     verificationError: null,
+                    points: points,
+                    pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
                   }
                 : task
             )
@@ -1851,7 +1803,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   }, [balance, isConnected, verifyA0XBalance]);
 
-  console.log(userInfo);
+  console.log(tasks[0]);
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
@@ -2068,7 +2020,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 <div className="w-full flex flex-col items-center mt-1">
                   <Button
                     onClick={handleClaimAirdrop}
-                    disabled={!allRequiredCompleted || isClaiming}
+                    // disabled={!allRequiredCompleted || isClaiming}
+                    disabled={true}
                     className="w-full bg-green-600 hover:bg-green-700 mt-2"
                   >
                     {isClaiming ? (
@@ -2092,30 +2045,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                       {claimMessage}
                     </div>
                   )}
-                  {/* <div>
-          <div className="relative flex items-center justify-between mb-2 w-full">
-            <div />
-            <div className="flex items-center">
-              <img
-                src="/moon_mini.png"
-                alt="Moon"
-                className="w-12 h-12 animate-bob pointer-events-none neon-moon"
-                style={{ marginBottom: '-12px' }}
-              />
-              {session && (session.user as UserWithImage)?.image && (
-                <Image
-                  src={(session.user as UserWithImage).image!}
-                  alt="User"
-                  width={48}
-                  height={48}
-                  className="w-12 h-12 animate-bob pointer-events-none neon-moon"
-                  style={{ marginBottom: '-12px', marginLeft: '-16px', zIndex: 10 }}
-                />
-              )}
-              </div>
-            </div> */}
-
-                  {/* Tab Switcher */}
                 </div>
               </div>
             ) : (

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
+import { NextRequest, NextResponse } from "next/server";
 
 interface SwapTransaction {
   hash: string;
@@ -14,13 +14,6 @@ interface UpdateBalanceBody {
   timestamp: string; // ISODate string
   currentBalance?: string; // Balance actual en formato string
   farcasterFid: number;
-}
-
-interface A0XTokenTaskUpdate {
-  completed?: boolean;
-  currentBalance?: number;
-  verifiedAt?: string; // ISODate string
-  lastTransaction?: string; // Hash de la última transacción
 }
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";
@@ -77,7 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "Balance updated successfully",
-        dataReceived: response.data,
+        ...response.data,
       },
       { status: 200 }
     );

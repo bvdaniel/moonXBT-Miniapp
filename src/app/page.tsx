@@ -19,12 +19,15 @@ async function getUserInfo(fid: number) {
     return null;
   }
 }
+
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
+
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: SearchParams;
 }): Promise<Metadata> {
-  const params = await Promise.resolve(searchParams);
+  const params = await searchParams;
   let rawFid = params.sharedFid;
   if (Array.isArray(rawFid)) {
     rawFid = rawFid[0];
@@ -80,12 +83,13 @@ export async function generateMetadata({
     },
   };
 }
+
 export default async function Page({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: SearchParams;
 }) {
-  const params = await Promise.resolve(searchParams);
+  const params = await searchParams;
   let rawFid = params.sharedFid;
   if (Array.isArray(rawFid)) {
     rawFid = rawFid[0];

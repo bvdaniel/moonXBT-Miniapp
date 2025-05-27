@@ -46,6 +46,13 @@ const MIN_A0X_REQUIRED = 10_000_000;
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
 const TOKEN_DECIMALS = 18;
 
+const calculateA0XPoints = (balance: number): number => {
+  if (balance < MIN_A0X_REQUIRED) return 0;
+  const basePoints = 100; // 100 puntos base por tener 10M
+  const extraMillions = Math.floor((balance - MIN_A0X_REQUIRED) / 1000000);
+  return basePoints + extraMillions;
+};
+
 const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
 };
@@ -532,8 +539,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       {
         id: "share-miniapp",
         title: "Share Mini App",
-        description:
-          "Share the mini app on Farcaster (50 points) + 10 points per referral",
+        description: "Share on Farcaster (50pts + 10/referral)",
         socialNetwork: "farcaster",
         isRequired: false,
         isCompleted: false,
@@ -587,7 +593,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         setBalance(balanceStr);
 
         // Calcular puntos basados en el balance de A0X
-        const points = Math.floor(balanceInEther / 1000000); // 1 punto por millón, sin límite máximo
+        const points = calculateA0XPoints(balanceInEther);
 
         // Solo actualizar tareas si los puntos han cambiado
         if (points !== lastPointsRef.current) {

@@ -25,7 +25,7 @@ import { useAccount, useReadContract } from "wagmi";
 
 import { UserContext } from "@farcaster/frame-core/dist/context";
 import Image from "next/image";
-import { FaInstagram, FaTiktok, FaTelegram } from "react-icons/fa";
+import { FaInstagram, FaTiktok, FaTelegram, FaTasks } from "react-icons/fa";
 import { SiFarcaster } from "react-icons/si";
 import Link from "next/link";
 import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
@@ -46,7 +46,7 @@ const MIN_A0X_REQUIRED = 10_000_000;
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
 
 const parseTextMillion = (amount: number) => {
-  return `${amount / 1_000_000}M`;
+  return `${Math.floor(amount / 1_000_000)}M`;
 };
 
 interface Task {
@@ -537,47 +537,16 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
         verificationError: null,
         points: 100,
-        action: async () => {
-          if (user?.fid) {
-            try {
-              const result = await sdk.actions.composeCast({
-                text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${userPoints} points so far!`,
-                embeds: [
-                  `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
-                ],
-              });
-
-              if (result?.cast) {
-                setTasks((prevTasks) =>
-                  prevTasks.map((task) =>
-                    task.id === "share-miniapp"
-                      ? { ...task, isCompleted: true }
-                      : task
-                  )
-                );
-              }
-            } catch (error) {
-              console.error("Error sharing mini app:", error);
-              setTasks((prevTasks) =>
-                prevTasks.map((task) =>
-                  task.id === "share-miniapp"
-                    ? { ...task, verificationError: "Error sharing mini app" }
-                    : task
-                )
-              );
-            }
-          }
-        },
       },
       {
         id: "follow-zora",
         title: "Follow on Zora",
-        description: "Follow @moonxbt_ai",
+        description: "Follow @moonxbt",
         socialNetwork: "zora",
         isRequired: false,
         isCompleted: false,
         needsAuth: false,
-        url: "https://zora.co/moonxbt_ai",
+        url: "https://zora.co/moonxbt",
         icon: (
           <Image
             src="/zora.png"
@@ -868,7 +837,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     task.isCompleted
                       ? "text-green-400"
                       : balance !== null
-                      ? "text-red-400"
+                      ? "text-red-300"
                       : "text-gray-400"
                   }`}
                 >
@@ -913,7 +882,41 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               </div>
             ) : (
               <Button
-                onClick={task.action}
+                onClick={async () => {
+                  console.log("user", user, sdk.actions.composeCast);
+                  if (user?.fid) {
+                    try {
+                      const result = await sdk.actions.composeCast({
+                        text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${userPoints} points so far!`,
+                        embeds: [
+                          `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
+                        ],
+                      });
+
+                      if (result?.cast) {
+                        setTasks((prevTasks) =>
+                          prevTasks.map((task) =>
+                            task.id === "share-miniapp"
+                              ? { ...task, isCompleted: true }
+                              : task
+                          )
+                        );
+                      }
+                    } catch (error) {
+                      console.error("Error sharing mini app:", error);
+                      setTasks((prevTasks) =>
+                        prevTasks.map((task) =>
+                          task.id === "share-miniapp"
+                            ? {
+                                ...task,
+                                verificationError: "Error sharing mini app",
+                              }
+                            : task
+                        )
+                      );
+                    }
+                  }
+                }}
                 className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
                 disabled={!user?.fid}
                 title="Share on Farcaster"
@@ -1901,6 +1904,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 }}
                 onClick={() => setActiveTab("tasks")}
               >
+                <FaTasks className="inline-block mr-2 align-middle" />
                 TASKS
               </button>
               <button

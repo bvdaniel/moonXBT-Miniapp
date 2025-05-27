@@ -201,8 +201,14 @@ export async function generateFarcasterManifest(): Promise<FarcasterManifest> {
     webhookUrl = `${baseUrl}/api/webhook`; // Usar baseUrl
   }
 
+  accountAssociation = {
+    header: process.env.FRAME_ACCOUNT_ASSOCIATION_HEADER || "",
+    payload: process.env.FRAME_ACCOUNT_ASSOCIATION_PAYLOAD || "",
+    signature: process.env.FRAME_ACCOUNT_ASSOCIATION_SIGNATURE || "",
+  };
+
   const manifest: FarcasterManifest = {
-    ...(accountAssociation && { accountAssociation }), // Añadir solo si existe
+    accountAssociation: accountAssociation,
     frame: {
       version: "1",
       name: process.env.NEXT_PUBLIC_FRAME_NAME || "MoonXBT-1",

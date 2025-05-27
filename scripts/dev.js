@@ -128,7 +128,7 @@ async function startDev() {
    5. Click "Preview" (note that it may take ~10 seconds to load)
 `);
   } else {
-    frameUrl = "http://localhost:3000";
+    frameUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
     console.log(`
 💻 To test your frame:
    1. Open the Warpcast Frame Developer Tools: https://warpcast.com/~/developers/frames
@@ -144,7 +144,7 @@ async function startDev() {
       ? path.join(projectRoot, "node_modules", ".bin", "next.cmd")
       : path.join(projectRoot, "node_modules", ".bin", "next");
 
-  const nextAuthUrl = process.env.NEXTAUTH_URL || frameUrl;
+  const nextAuthUrl = process.env.NEXT_PUBLIC_URL || frameUrl;
 
   nextDev = spawn(nextBin, ["dev"], {
     stdio: "inherit",

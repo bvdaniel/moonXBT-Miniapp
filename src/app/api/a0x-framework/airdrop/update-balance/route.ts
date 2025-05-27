@@ -13,6 +13,7 @@ interface UpdateBalanceBody {
   transactions: SwapTransaction[];
   timestamp: string; // ISODate string
   currentBalance?: string; // Balance actual en formato string
+  farcasterFid: number;
 }
 
 interface A0XTokenTaskUpdate {
@@ -31,10 +32,16 @@ export async function POST(request: NextRequest) {
   try {
     const body: UpdateBalanceBody = await request.json();
 
-    if (!body.walletAddress || !body.transactions || !body.timestamp) {
+    if (
+      !body.walletAddress ||
+      !body.transactions ||
+      !body.timestamp ||
+      !body.farcasterFid
+    ) {
       return NextResponse.json(
         {
-          error: "walletAddress, transactions, and timestamp are required",
+          error:
+            "walletAddress, transactions, timestamp and farcasterFid are required",
         },
         { status: 400 }
       );
@@ -45,15 +52,12 @@ export async function POST(request: NextRequest) {
     // Preparar el payload para el backend de A0X
     const payload = {
       walletAddress: body.walletAddress,
-      tasks: {
-        "hold-a0x": {
-          verifiedAt: body.timestamp,
-          lastTransaction: body.transactions[0]?.hash || null,
-          currentBalance: body.currentBalance
-            ? Number(body.currentBalance)
-            : undefined,
-        } as A0XTokenTaskUpdate,
-      },
+      transactions: body.transactions,
+      timestamp: body.timestamp,
+      currentBalance: body.currentBalance
+        ? Number(body.currentBalance)
+        : undefined,
+      farcasterFid: body.farcasterFid,
     };
 
     const response = await axios.post(

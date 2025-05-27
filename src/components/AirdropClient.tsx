@@ -223,7 +223,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log("data", data);
         setUserInfo(data);
         setUserPoints(data.points || 0); // Actualizar los puntos cuando recibimos la información
 
@@ -287,7 +286,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         if (
           data.twitterAccount &&
           user?.fid &&
-          data.tasks?.["follow-twitter"]?.completed !== true
+          (!data.tasks || data.tasks["follow-twitter"]?.completed !== true)
         ) {
           try {
             const twitterResponse = await fetch(
@@ -530,14 +529,16 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       {
         id: "share-miniapp",
         title: "Share Mini App",
-        description: "Share the mini app on Farcaster",
+        description:
+          "Share the mini app on Farcaster (50 points) + 10 points per referral",
         socialNetwork: "farcaster",
         isRequired: false,
         isCompleted: false,
         needsAuth: false,
         icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
         verificationError: null,
-        points: 100,
+        points: 50,
+        pointsDescription: "50 points for sharing + 10 points per referral",
       },
       {
         id: "follow-zora",
@@ -577,7 +578,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       setBalance(balanceNum.toString());
 
       // Calcular puntos basados en el balance de A0X
-      const points = Math.min(10, Math.floor(balanceNum / 1000000)); // 1 punto por millón, máximo 10 puntos
+      const points = Math.floor(balanceNum / 1000000); // 1 punto por millón, sin límite máximo
 
       setTasks((prevTasks) =>
         prevTasks.map((task) =>

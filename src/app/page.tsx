@@ -56,7 +56,7 @@ export async function generateMetadata({
       action: {
         type: "launch_frame",
         name: "MoonXBT",
-        url: appUrl,
+        url: `${appUrl}/?sharedFid=${sharedFid}`,
         splashImageUrl: `${appUrl}/opengraph-image.png`,
         splashBackgroundColor: "#000000",
       },
@@ -104,5 +104,7 @@ export default async function Page({
     initialPoints = initialUserInfo?.points || 100;
   }
 
-  return <AirdropClient />;
+  console.log("sharedFid", sharedFid);
+
+  return <AirdropClient sharedFid={sharedFid} />;
 }

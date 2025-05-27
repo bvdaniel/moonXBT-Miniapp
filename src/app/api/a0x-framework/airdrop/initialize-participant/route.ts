@@ -8,6 +8,7 @@ interface InitializeParticipantBody {
   displayName?: string;
   isFollowingFarcaster?: boolean;
   twitterAccount?: { username: string; platform: string }; // Opcional
+  referredByFid?: number | null;
 }
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";

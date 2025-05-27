@@ -105,6 +105,7 @@ interface UserInfo {
       telegramUsername: string;
     };
   };
+  points?: number;
 }
 const asciiLogoLines = [
   "                                                /$$   /$$ /$$$$$$$  /$$$$$$$$",
@@ -125,8 +126,12 @@ type UserWithImage = {
   image?: string;
 };
 
-export default function AirdropClient() {
-  const { address, isConnected } = useAccount(); // connector puede ser útil
+interface AirdropClientProps {
+  sharedFid?: number | null;
+}
+
+export default function AirdropClient({ sharedFid }: AirdropClientProps) {
+  const { address, isConnected } = useAccount();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isVerifyingAll, setIsVerifyingAll] = useState(false);
   const [balance, setBalance] = useState<string | null>(null);
@@ -154,6 +159,7 @@ export default function AirdropClient() {
   const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
   const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
   const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
+  const [userPoints, setUserPoints] = useState<number>(0); // Nuevo estado para los puntos
 
   const {
     data: tokenBalanceData,
@@ -216,6 +222,7 @@ export default function AirdropClient() {
       if (response.ok) {
         const data = await response.json();
         setUserInfo(data);
+        setUserPoints(data.points || 0); // Actualizar los puntos cuando recibimos la información
 
         if (data.fid && data.username) {
           try {
@@ -231,6 +238,7 @@ export default function AirdropClient() {
                   pfpUrl: user?.pfpUrl || data.profilePicture,
                   isFollowingFarcaster: data.isFollowing,
                   walletAddress: data.walletAddress,
+                  referredByFid: sharedFid || null, // Agregamos el sharedFid aquí
                 }),
               }
             );
@@ -531,7 +539,7 @@ export default function AirdropClient() {
           if (user?.fid) {
             try {
               const result = await sdk.actions.composeCast({
-                text: "I'm participating in $moonXBT airdrop, the first autonomous content creator on Base",
+                text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${userPoints} points so far!`,
                 embeds: [
                   `https://miniapps.farcaster.xyz/moonXBT?sharedFid=${user.fid}`,
                 ],

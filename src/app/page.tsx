@@ -104,5 +104,5 @@ export default async function Page({
     initialPoints = initialUserInfo?.points || 100;
   }
 
-  return <AirdropClient />;
+  return <AirdropClient sharedFid={sharedFid} />;
 }

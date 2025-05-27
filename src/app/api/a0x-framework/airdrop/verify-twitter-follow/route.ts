@@ -57,14 +57,10 @@ export async function POST(request: NextRequest) {
 
     body.farcasterFid = body.fid;
 
-    console.log("Verifying Twitter follow and updating tasks:", body);
-
     const response = await axios.post(
       `${A0X_AGENT_API_URL}/a0x-framework/airdrop/verify-twitter-follow`,
       body
     );
-
-    console.log("Response from A0X Agent:", response.data);
 
     if (response.status !== 200) {
       return NextResponse.json(

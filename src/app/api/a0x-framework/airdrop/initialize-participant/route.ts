@@ -29,14 +29,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log("Initializing participant:", body);
-
     const response = await axios.post(
       `${A0X_AGENT_API_URL}/a0x-framework/airdrop/initialize-participant`,
       body
     );
-
-    console.log("Response from A0X Agent:", response.data);
 
     if (response.status !== 200) {
       return NextResponse.json(

@@ -211,7 +211,7 @@ export async function generateFarcasterManifest(): Promise<FarcasterManifest> {
     accountAssociation: accountAssociation,
     frame: {
       version: "1",
-      name: process.env.NEXT_PUBLIC_FRAME_NAME || "MoonXBT-1",
+      name: process.env.NEXT_PUBLIC_FRAME_NAME || "MoonXBT Airdrop",
       iconUrl: `${baseUrl}/icon.png`, // Usar baseUrl
       homeUrl: baseUrl, // Usar baseUrl
       splashImageUrl:

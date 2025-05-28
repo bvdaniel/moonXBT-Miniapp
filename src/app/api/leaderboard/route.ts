@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import axios from "axios";
+import { NextResponse } from "next/server";
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";
 
@@ -47,19 +47,9 @@ interface LeaderboardEntry {
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get("limit") || "25");
-    const cursor = searchParams.get("cursor");
-
     // Obtener los datos del leaderboard desde la API de A0X
     const response = await axios.get(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/leaderboard`,
-      {
-        params: {
-          limit,
-          cursor,
-        },
-      }
+      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/leaderboard`
     );
 
     if (response.status !== 200) {
@@ -78,8 +68,8 @@ export async function GET(request: Request) {
 
     // Transformar los datos al formato esperado por el frontend
     const transformedData = response.data.data.map(
-      (entry: LeaderboardEntry) => ({
-        rank: 0, // Se calculará en el frontend basado en la posición
+      (entry: LeaderboardEntry, index: number) => ({
+        rank: index + 1,
         username: entry.username,
         points: entry.points,
         avatar: entry.pfpUrl,
@@ -99,12 +89,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       data: transformedData,
-      pagination: {
-        nextCursor: response.data.pagination.nextCursor,
-        hasMore: response.data.pagination.hasMore,
-        totalItems: response.data.pagination.totalItems,
-        itemsPerPage: response.data.pagination.itemsPerPage,
-      },
     });
   } catch (error) {
     console.error("Error al obtener el leaderboard:", error);

@@ -38,13 +38,6 @@ interface LeaderboardEntry {
   };
 }
 
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
-}
-
 export default function LeaderboardTab() {
   const [allLeaderboardData, setAllLeaderboardData] = useState<
     LeaderboardEntry[]

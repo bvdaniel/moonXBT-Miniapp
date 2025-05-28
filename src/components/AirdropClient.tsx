@@ -163,6 +163,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [isSubmittingTelegram, setIsSubmittingTelegram] = useState(false);
   const [showTelegramInput, setShowTelegramInput] = useState(false);
 
+  const [zoraUsername, setZoraUsername] = useState<string>("");
+  const [isSubmittingZora, setIsSubmittingZora] = useState(false);
+  const [showZoraInput, setShowZoraInput] = useState(false);
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
   const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
@@ -537,19 +541,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         points: 100,
       },
       {
-        id: "share-miniapp",
-        title: "Share Mini App",
-        description: "Share on Farcaster (50pts + 10/referral)",
-        socialNetwork: "farcaster",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
-        verificationError: null,
-        points: 50,
-        pointsDescription: "50 points for sharing + 10 points per referral",
-      },
-      {
         id: "follow-zora",
         title: "Follow on Zora",
         description: "Follow @moonxbt",
@@ -569,6 +560,20 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         ),
         verificationError: null,
         points: 100,
+        targetUsername: "moonxbt",
+      },
+      {
+        id: "share-miniapp",
+        title: "Share Mini App",
+        description: "Share on Farcaster (50pts + 10/referral)",
+        socialNetwork: "farcaster",
+        isRequired: false,
+        isCompleted: false,
+        needsAuth: false,
+        icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
+        verificationError: null,
+        points: 50,
+        pointsDescription: "50 points for sharing + 10 points per referral",
       },
     ]);
   }, []);
@@ -587,32 +592,41 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       const balanceInEther = Number(formatEther(balanceInWei));
       const balanceStr = balanceInEther.toString();
 
-      // Solo actualizar si el balance ha cambiado
-      if (balanceStr !== lastBalanceRef.current) {
-        lastBalanceRef.current = balanceStr;
-        setBalance(balanceStr);
+      console.log("Balance actual:", balanceInEther);
+      console.log("Balance mínimo requerido:", MIN_A0X_REQUIRED);
+      console.log(
+        "¿Cumple con el mínimo?:",
+        balanceInEther >= MIN_A0X_REQUIRED
+      );
 
-        // Calcular puntos basados en el balance de A0X
-        const points = calculateA0XPoints(balanceInEther);
+      // Actualizar el balance siempre
+      setBalance(balanceStr);
+      lastBalanceRef.current = balanceStr;
 
-        // Solo actualizar tareas si los puntos han cambiado
-        if (points !== lastPointsRef.current) {
-          lastPointsRef.current = points;
-          setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-              task.id === "hold-a0x"
-                ? {
-                    ...task,
-                    isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
-                    verificationError: null,
-                    points: points,
-                    pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
-                  }
-                : task
-            )
-          );
-        }
-      }
+      const points = calculateA0XPoints(balanceInEther);
+      lastPointsRef.current = points;
+
+      // Actualizar la tarea inmediatamente
+      setTasks((prevTasks) => {
+        const updatedTasks = prevTasks.map((task) => {
+          if (task.id === "hold-a0x") {
+            console.log("Actualizando tarea hold-a0x:", {
+              balance: balanceInEther,
+              isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
+              points: points,
+            });
+            return {
+              ...task,
+              isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
+              verificationError: null,
+              points,
+              pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
+            };
+          }
+          return task;
+        });
+        return updatedTasks;
+      });
     }
   }, [tokenBalanceData]);
 
@@ -1106,46 +1120,61 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     if (
       task.id === "follow-tiktok" ||
       task.id === "follow-instagram" ||
-      task.id === "join-telegram"
+      task.id === "join-telegram" ||
+      task.id === "follow-zora"
     ) {
       const isInstagram = task.id === "follow-instagram";
       const isTiktok = task.id === "follow-tiktok";
-      // const isTelegram = task.id === 'join-telegram'; // No es necesaria directamente
+      const isZora = task.id === "follow-zora";
 
       const showInput = isInstagram
         ? showInstagramInput
         : isTiktok
         ? showTiktokInput
+        : isZora
+        ? showZoraInput
         : showTelegramInput;
       const setShowInput = isInstagram
         ? setShowInstagramInput
         : isTiktok
         ? setShowTiktokInput
+        : isZora
+        ? setShowZoraInput
         : setShowTelegramInput;
       const username = isInstagram
         ? instagramUsername
         : isTiktok
         ? tiktokUsername
+        : isZora
+        ? zoraUsername
         : telegramUsername;
       const setUsername = isInstagram
         ? setInstagramUsername
         : isTiktok
         ? setTiktokUsername
+        : isZora
+        ? setZoraUsername
         : setTelegramUsername;
       const handleSubmit = isInstagram
         ? handleRegisterInstagramTask
         : isTiktok
         ? handleRegisterTiktokTask
+        : isZora
+        ? handleRegisterZoraTask
         : handleRegisterTelegramTask;
       const isSubmitting = isInstagram
         ? isSubmittingInstagram
         : isTiktok
         ? isSubmittingTiktok
+        : isZora
+        ? isSubmittingZora
         : isSubmittingTelegram;
       const socialName = isInstagram
         ? "Instagram"
         : isTiktok
         ? "TikTok"
+        : isZora
+        ? "Zora"
         : "Telegram";
 
       const previousUsername: string | null =
@@ -1703,6 +1732,97 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   };
 
+  const handleRegisterZoraTask = async (usernameValue?: string) => {
+    if (!user?.fid) {
+      console.log("User FID not available to register Zora task");
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === "follow-zora"
+            ? { ...task, verificationError: "Sign in with Farcaster first." }
+            : task
+        )
+      );
+      return;
+    }
+    if (!usernameValue && showZoraInput) {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === "follow-zora"
+            ? { ...task, verificationError: "Zora username is required." }
+            : task
+        )
+      );
+      return;
+    }
+
+    setIsSubmittingZora(true);
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === "follow-zora" ? { ...task, verificationError: null } : task
+      )
+    );
+
+    try {
+      const zoraTask = tasks.find((t) => t.id === "follow-zora");
+      if (!zoraTask?.targetUsername) {
+        throw new Error("Target Zora username not found");
+      }
+
+      const response = await fetch("/api/a0x-framework/airdrop/task/zora", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          farcasterFid: user.fid,
+          zoraUsername: usernameValue?.replace("@", ""),
+          targetZoraUsername: zoraTask.targetUsername,
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Zora task registered with username:", usernameValue);
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === "follow-zora"
+              ? {
+                  ...task,
+                  isCompleted: true,
+                  verificationError: null,
+                }
+              : task
+          )
+        );
+        setShowZoraInput(false);
+        setZoraUsername("");
+      } else {
+        const errorData = await response.json();
+        console.error("Error registering Zora task:", errorData);
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            task.id === "follow-zora"
+              ? {
+                  ...task,
+                  verificationError:
+                    errorData.details ||
+                    "Failed to register. Please try again.",
+                }
+              : task
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error registering Zora task:", error);
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === "follow-zora"
+            ? { ...task, verificationError: "Network error. Please try again." }
+            : task
+        )
+      );
+    } finally {
+      setIsSubmittingZora(false);
+    }
+  };
+
   const handleBuyA0X = async () => {
     try {
       const result = await sdk.actions.swapToken({
@@ -1784,7 +1904,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     ...task,
                     isCompleted: true,
                     verificationError: null,
-                    points: points,
+                    points,
                     pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
                   }
                 : task
@@ -1927,9 +2047,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                       >
                         <div className="flex items-center space-x-3">
                           {task.isCompleted ? (
-                            <span className="text-green-300">[✓]</span>
+                            <span className="text-green-300 flex-1">[✓]</span>
                           ) : (
-                            <span className="text-white">[ ]</span>
+                            <span className="text-white flex-1">[ ]</span>
                           )}
                           <div>
                             <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">

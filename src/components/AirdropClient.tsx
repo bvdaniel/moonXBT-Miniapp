@@ -316,6 +316,13 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               }
               break;
 
+            case "share-miniapp":
+              if (data.tasks?.["share-miniapp"]?.completed === true) {
+                setUserPoints(userPoints + 50);
+                return { ...task, isCompleted: true, verificationError: null };
+              }
+              break;
+
             default:
               break;
           }

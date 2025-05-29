@@ -291,6 +291,35 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               };
             }
           }
+          switch (task.id) {
+            case "follow-instagram":
+              if (data.tasks?.["follow-instagram"]?.completed === true) {
+                return { ...task, isCompleted: true, verificationError: null };
+              }
+              break;
+
+            case "follow-tiktok":
+              if (data.tasks?.["follow-tiktok"]?.completed === true) {
+                return { ...task, isCompleted: true, verificationError: null };
+              }
+              break;
+
+            case "follow-telegram":
+              if (data.tasks?.["follow-telegram"]?.completed === true) {
+                return { ...task, isCompleted: true, verificationError: null };
+              }
+              break;
+
+            case "follow-zora":
+              if (data.tasks?.["follow-zora"]?.completed === true) {
+                return { ...task, isCompleted: true, verificationError: null };
+              }
+              break;
+
+            default:
+              break;
+          }
+
           return task;
         });
 

@@ -337,6 +337,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                   return task;
                 })
               );
+              if (twitterData.dataReceived.isFollowing === true) {
+                setUserPoints(userPoints + 100);
+              }
             }
           } catch (error) {
             console.error("Error verifying Twitter follow:", error);
@@ -854,8 +857,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                   console.log("user", user, sdk.actions.composeCast);
                   if (user?.fid) {
                     try {
+                      // Usar el valor más reciente de los puntos
+                      const currentPoints =
+                        lastPointsRef.current !== null
+                          ? lastPointsRef.current
+                          : userPoints;
+
                       const result = await sdk.actions.composeCast({
-                        text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${userPoints} points so far!`,
+                        text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${currentPoints} points so far!`,
                         embeds: [
                           `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
                         ],
@@ -1423,6 +1432,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         );
         if (data.dataReceived.isFollowing === true) {
           setShowTwitterInput(false);
+          setUserPoints(userPoints + 100);
         }
       } else {
         const errorData = await response.json();
@@ -1910,6 +1920,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 : task
             )
           );
+          setUserPoints(userPoints + points);
         }
       } else {
         console.error(

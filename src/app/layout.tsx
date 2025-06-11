@@ -36,7 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} font-inter`}>
         <PrivyProvider
-          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || "test-app-id"}
+          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
           config={{
             loginMethods: ["wallet", "telegram", "twitter", "farcaster"],
             appearance: {

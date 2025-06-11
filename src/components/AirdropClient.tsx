@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "@/components/ui/Button"; // Asegúrate que esta ruta es correcta
+import { Button } from "@/components/ui/Button";
 import {
   Tooltip,
   TooltipContent,
@@ -7,30 +7,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import sdk from "@farcaster/frame-sdk";
-import {
-  CheckCircle2,
-  Circle,
-  ExternalLink,
-  Loader2,
-  MessageCircle,
-  Play,
-  Send,
-  X,
-  RefreshCw,
-  Info,
-} from "lucide-react";
-import { useEffect, useState, useCallback, useRef } from "react";
-import { formatEther, parseUnits } from "viem";
-import { useAccount, useReadContract } from "wagmi";
-
+import { Loader2, Info, CheckCircle2, Wallet } from "lucide-react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { formatEther } from "viem";
+import { useAccount, useReadContract, useDisconnect } from "wagmi";
 import { UserContext } from "@farcaster/frame-core/dist/context";
 import Image from "next/image";
-import { FaInstagram, FaTiktok, FaTelegram, FaTasks } from "react-icons/fa";
-import { SiFarcaster } from "react-icons/si";
-import Link from "next/link";
+import { FaTasks } from "react-icons/fa";
 import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
+import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
-// A0X Token Contract ABI - only the balanceOf function
+// Hooks and services
+import { useAirdropTasks, type Task } from "@/hooks/useAirdropTasks";
+import { airdropApi, type UserInfo } from "@/services/airdropApi";
+
+// Components
+import A0XTaskButton from "@/components/task-components/A0XTaskButton";
+import ShareMiniappButton from "@/components/task-components/ShareMiniappButton";
+import TwitterTaskButton from "@/components/task-components/TwitterTaskButton";
+import FarcasterTaskButton from "@/components/task-components/FarcasterTaskButton";
+import SocialTaskButton from "@/components/task-components/SocialTaskButton";
+
+// Constants
 const tokenABI = [
   {
     inputs: [{ name: "account", type: "address" }],
@@ -43,78 +41,14 @@ const tokenABI = [
 
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
 const MIN_A0X_REQUIRED = 10_000_000;
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-const TOKEN_DECIMALS = 18;
 
 const calculateA0XPoints = (balance: number): number => {
   if (balance < MIN_A0X_REQUIRED) return 0;
-  const basePoints = 100; // 100 puntos base por tener 10M
+  const basePoints = 100;
   const extraMillions = Math.floor((balance - MIN_A0X_REQUIRED) / 1000000);
   return basePoints + extraMillions;
 };
 
-const parseTextMillion = (amount: number) => {
-  return `${Math.floor(amount / 1_000_000)}M`;
-};
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  socialNetwork:
-    | "farcaster"
-    | "twitter"
-    | "tiktok"
-    | "instagram"
-    | "telegram"
-    | "a0x"
-    | "zora";
-  isRequired: boolean;
-  isCompleted: boolean;
-  needsAuth: boolean;
-  url?: string;
-  icon: React.ReactNode;
-  targetUsername?: string;
-  verificationError?: string | null;
-  action?: () => void;
-  points: number;
-  pointsDescription?: string;
-}
-
-interface VerificationResult {
-  taskId: string;
-  isCompleted: boolean;
-  error?: string;
-}
-
-// Interface for the user information returned from our API
-interface UserInfo {
-  fid: number;
-  username: string;
-  displayName: string;
-  profilePicture: string;
-  followerCount: number;
-  followingCount: number;
-  isFollowing: boolean;
-  walletAddress: string;
-  twitterAccount: string | null;
-  tasks: {
-    [key: string]: {
-      isRequired: boolean;
-      isCompleted: boolean;
-      verificationDetails: {
-        checkedUsername: boolean;
-        targetUsername: string;
-        targetGroup: string;
-      };
-      verificationAttempts: number;
-      lastVerified: string;
-      completed: boolean;
-      telegramUsername: string;
-    };
-  };
-  points?: number;
-}
 const asciiLogoLines = [
   "                                                /$$   /$$ /$$$$$$$  /$$$$$$$$",
   "                                               | $$  / $$| $$__  $$|__  $$__/",
@@ -126,97 +60,192 @@ const asciiLogoLines = [
   "|__/ |__/ |__/  ______/   ______/ |__/  |__/|__/  |__/|_______/    |__/",
 ];
 
-type UserWithImage = {
-  id: string;
-  fid?: number;
-  twitterId?: string;
-  twitterHandle?: string;
-  image?: string;
-};
-
 interface AirdropClientProps {
   sharedFid?: number | null;
 }
 
 export default function AirdropClient({ sharedFid }: AirdropClientProps) {
-  const { address, isConnected } = useAccount();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [isVerifyingAll, setIsVerifyingAll] = useState(false);
-  const [balance, setBalance] = useState<string | null>(null);
-  const [user, setUser] = useState<UserContext | null>(null);
-  const [isVerifyingFarcaster, setIsVerifyingFarcaster] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [isClient, setIsClient] = useState(false);
-  const [twitterUsername, setTwitterUsername] = useState<string>("");
-  const [isSubmittingTwitter, setIsSubmittingTwitter] = useState(false);
-  const [showTwitterInput, setShowTwitterInput] = useState(false);
-
-  const [instagramUsername, setInstagramUsername] = useState<string>("");
-  const [isSubmittingInstagram, setIsSubmittingInstagram] = useState(false);
-  const [showInstagramInput, setShowInstagramInput] = useState(false);
-
-  const [tiktokUsername, setTiktokUsername] = useState<string>("");
-  const [isSubmittingTiktok, setIsSubmittingTiktok] = useState(false);
-  const [showTiktokInput, setShowTiktokInput] = useState(false);
-
-  const [telegramUsername, setTelegramUsername] = useState<string>("");
-  const [isSubmittingTelegram, setIsSubmittingTelegram] = useState(false);
-  const [showTelegramInput, setShowTelegramInput] = useState(false);
-
-  const [zoraUsername, setZoraUsername] = useState<string>("");
-  const [isSubmittingZora, setIsSubmittingZora] = useState(false);
-  const [showZoraInput, setShowZoraInput] = useState(false);
-
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isVerifyingTwitter, setIsVerifyingTwitter] = useState(false);
-  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
-  const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
-  const [userPoints, setUserPoints] = useState<number>(0); // Nuevo estado para los puntos
-
-  const lastBalanceRef = useRef<string | null>(null);
-  const lastPointsRef = useRef<number | null>(null);
-
-  const {
-    data: tokenBalanceData,
-    isLoading: isLoadingTokenBalance,
-    error: tokenBalanceError,
-  } = useReadContract({
-    chainId: 8453,
-    address: A0X_TOKEN_ADDRESS,
-    abi: tokenABI,
-    functionName: "balanceOf",
-    args: [address as `0x${string}`],
-    query: {
-      enabled: !!address && isConnected,
-      refetchInterval: false, // Desactivamos la actualización automática
+  // Privy hooks
+  const { ready, authenticated, login } = usePrivy();
+  const { wallets } = useWallets();
+  const { disconnect: wagmiDisconnect } = useDisconnect();
+  const { logout } = useLogout({
+    onSuccess: () => {
+      console.log("User logged out");
     },
   });
 
+  // Wagmi hooks for balance reading
+  const { address, isConnected } = useAccount();
+
+  const {
+    tasks,
+    requiredTasks,
+    optionalTasks,
+    completedRequiredTasks,
+    completedOptionalTasks,
+    initializeTasks,
+    updateTask,
+  } = useAirdropTasks();
+
+  // State
+  const [balance, setBalance] = useState<string | null>(null);
+  const [user, setUser] = useState<UserContext | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
+  const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
+  const [userPoints, setUserPoints] = useState<number>(0);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
+  const [isInMiniApp, setIsInMiniApp] = useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const lastBalanceRef = useRef<string | null>(null);
+  const lastPointsRef = useRef<number | null>(null);
+  const addressRef = useRef<string | null>(null);
+
+  // Privy computed values
+  const disableLogin = !ready || (ready && authenticated);
+
+  const addressLowerCase = useMemo(() => {
+    if (wallets[0] && wallets[0].address) {
+      addressRef.current = wallets[0].address;
+      return wallets[0].address.toLowerCase();
+    }
+    return "";
+  }, [wallets]);
+
+  // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
+  useEffect(() => {
+    const initializeUserWithoutMiniApp = async () => {
+      const wallet = wallets[0];
+      if (wallet) {
+        await airdropApi.initializeParticipant({
+          fid: 0,
+          username: "",
+          displayName: "",
+          pfpUrl: "",
+          isFollowingFarcaster: false,
+          walletAddress: wallet.address,
+          referredByFid: sharedFid || null,
+        });
+      }
+    };
+    if (!isInMiniApp && ready && authenticated && wallets.length > 0) {
+      initializeUserWithoutMiniApp();
+    }
+  }, [ready, authenticated, wallets, isInMiniApp, sharedFid]);
+
+  const { data: tokenBalanceData, isLoading: isLoadingTokenBalance } =
+    useReadContract({
+      chainId: 8453,
+      address: A0X_TOKEN_ADDRESS,
+      abi: tokenABI,
+      functionName: "balanceOf",
+      args: [address as `0x${string}`],
+      query: {
+        enabled: !!address && isConnected,
+        refetchInterval: false,
+      },
+    });
+
+  // Privy handlers
+  const handleSignout = useCallback(async () => {
+    try {
+      await logout();
+      await wagmiDisconnect();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  }, [logout, wagmiDisconnect]);
+
+  const handleCopy = useCallback(async () => {
+    if (!wallets[0]?.address) return;
+    try {
+      await navigator.clipboard.writeText(wallets[0].address);
+      console.log("Wallet address copied to clipboard");
+      setCopied(true);
+    } catch (error) {
+      console.error("Error copying wallet address", error);
+    } finally {
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    }
+  }, [wallets]);
+
+  const handleLogin = useCallback(() => {
+    login({
+      loginMethods: ["wallet", "telegram", "twitter", "farcaster"],
+    });
+  }, [login]);
+
+  // Initialize and detect miniapp
   useEffect(() => {
     setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    // Hide splash screen when component mounts
     sdk.actions.ready();
+    initializeTasks();
+
+    // Detect if running in miniapp
+    const detectMiniApp = async () => {
+      try {
+        const isMiniApp = await sdk.isInMiniApp();
+        setIsInMiniApp(isMiniApp);
+        console.log("Is in Mini App:", isMiniApp);
+      } catch (error) {
+        console.error("Error detecting Mini App:", error);
+        setIsInMiniApp(false);
+      }
+    };
+
+    detectMiniApp();
+  }, [initializeTasks]);
+
+  // Handle wallet timeout
+  useEffect(() => {
+    if (ready && authenticated) {
+      const timer = setTimeout(() => {
+        if (wallets.length === 0) {
+          console.log("ready and authenticated but no wallets after 8 seconds");
+          handleSignout();
+        }
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [ready, authenticated, wallets, handleSignout]);
+
+  // ASCII animation
+  useEffect(() => {
+    setAsciiLinesToShow(0);
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      setAsciiLinesToShow(i);
+      if (i >= asciiLogoLines.length) clearInterval(interval);
+    }, 120);
+    return () => clearInterval(interval);
   }, []);
 
+  // Get user context
   useEffect(() => {
     const viewProfile = async () => {
       const context = await sdk.context;
       const user = context?.user;
       if (user) {
         setUser(user);
-        // Verify if the user follows the target account when we get the FID
         if (user.fid) {
+          // Use the complete verification function
           verifyFarcasterFollow(user.fid);
         }
       }
     };
-    viewProfile();
-  }, []);
+    if (isInMiniApp) {
+      viewProfile();
+    }
+  }, [sharedFid, ready, authenticated, isInMiniApp]);
 
-  // Function to verify if the user follows the target account on Farcaster
+  // Complete function to verify Farcaster follow and handle all related tasks
   const verifyFarcasterFollow = async (
     fid: number,
     isRefresh: boolean = false
@@ -224,398 +253,144 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     const farcasterTask = tasks.find((task) => task.id === "follow-farcaster");
     if (!farcasterTask || !farcasterTask.targetUsername) return;
 
-    if (isRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsVerifyingFarcaster(true);
-    }
-
     try {
-      const response = await fetch(
-        `/api/verify-follow?fid=${fid}&targetUsername=${farcasterTask.targetUsername}&refresh=${isRefresh}`
+      const data = await airdropApi.verifyFarcasterFollow(
+        fid,
+        farcasterTask.targetUsername,
+        isRefresh
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        setUserInfo(data);
-        setUserPoints(data.points || 0); // Actualizar los puntos cuando recibimos la información
+      setUserInfo(data);
+      setUserPoints(data.points || 0);
 
-        if (data.fid && data.username) {
-          try {
-            const initResponse = await fetch(
-              "/api/a0x-framework/airdrop/initialize-participant",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fid: data.fid,
-                  username: data.username,
-                  displayName: data.displayName,
-                  pfpUrl: user?.pfpUrl || data.profilePicture,
-                  isFollowingFarcaster: data.isFollowing,
-                  walletAddress: data.walletAddress,
-                  referredByFid: sharedFid || null, // Agregamos el sharedFid aquí
-                }),
-              }
-            );
-            if (!initResponse.ok) {
-              console.error(
-                "Error initializing participant:",
-                await initResponse.json()
-              );
-            }
-          } catch (initError) {
-            console.error("Error initializing participant:", initError);
-          }
+      // Initialize participant if we have the data
+      if (data.fid && data.username) {
+        console.log("Initializing participant", data, user);
+        try {
+          await airdropApi.initializeParticipant({
+            fid: data.fid,
+            username: data.username,
+            displayName: data.displayName,
+            pfpUrl: data.profilePicture || user?.pfpUrl || "",
+            isFollowingFarcaster: data.isFollowing,
+            walletAddress: data.walletAddress,
+            referredByFid: sharedFid || null,
+          });
+        } catch (initError) {
+          console.error("Error initializing participant:", initError);
         }
+      }
 
-        // Actualizar tareas
-        const updatedTasks = tasks.map((task) => {
-          if (task.id === "follow-farcaster") {
-            return {
-              ...task,
-              isCompleted: data.isFollowing === true,
-              verificationError:
-                data.isFollowing === true
-                  ? null
-                  : "You're not following this account yet.",
-            };
-          }
+      // Update Farcaster task
+      updateTask("follow-farcaster", {
+        isCompleted: data.isFollowing === true,
+        verificationError:
+          data.isFollowing === true
+            ? null
+            : "You're not following this account yet.",
+      });
 
-          if (task.id === "follow-twitter" && data.twitterAccount) {
-            if (data.tasks?.["follow-twitter"]?.completed === true) {
-              return {
-                ...task,
-                isCompleted: true,
-                verificationError: null,
-              };
-            }
-          }
-          switch (task.id) {
-            case "follow-instagram":
-              if (data.tasks?.["follow-instagram"]?.completed === true) {
-                return { ...task, isCompleted: true, verificationError: null };
-              }
-              break;
-
-            case "follow-tiktok":
-              if (data.tasks?.["follow-tiktok"]?.completed === true) {
-                return { ...task, isCompleted: true, verificationError: null };
-              }
-              break;
-
-            case "follow-telegram":
-              if (data.tasks?.["follow-telegram"]?.completed === true) {
-                return { ...task, isCompleted: true, verificationError: null };
-              }
-              break;
-
-            case "follow-zora":
-              if (data.tasks?.["follow-zora"]?.completed === true) {
-                return { ...task, isCompleted: true, verificationError: null };
-              }
-              break;
-
-            default:
-              break;
-          }
-
-          return task;
+      // Update Twitter task if data available
+      if (data.twitterAccount && data.tasks?.["follow-twitter"]) {
+        updateTask("follow-twitter", {
+          isCompleted: data.tasks["follow-twitter"].completed === true,
+          verificationError: data.tasks["follow-twitter"].completed
+            ? null
+            : "You're not following this account yet.",
         });
+      }
 
-        setTasks(updatedTasks);
+      // Update social media tasks
+      const socialTasks = [
+        "follow-instagram",
+        "follow-tiktok",
+        "join-telegram",
+        "follow-zora",
+        "share-miniapp",
+      ];
 
-        // Si hay una cuenta de Twitter, verificar el seguimiento
-        if (
-          data.twitterAccount &&
-          user?.fid &&
-          (!data.tasks || data.tasks["follow-twitter"]?.completed !== true)
-        ) {
-          try {
-            const twitterResponse = await fetch(
-              "/api/a0x-framework/airdrop/verify-twitter-follow",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fid: user.fid,
-                  twitterUsername: data.twitterAccount,
-                  targetTwitterUsername: tasks.find(
-                    (t) => t.id === "follow-twitter"
-                  )?.targetUsername,
-                  walletAddress: data.walletAddress,
-                }),
-              }
-            );
+      socialTasks.forEach((taskId) => {
+        if (data.tasks?.[taskId]) {
+          updateTask(taskId, {
+            isCompleted: data.tasks[taskId].completed === true,
+            verificationError: data.tasks[taskId].completed
+              ? null
+              : "Task not completed yet.",
+          });
 
-            if (twitterResponse.ok) {
-              const twitterData = await twitterResponse.json();
-              setTasks((prevTasks) =>
-                prevTasks.map((task) => {
-                  if (task.id === "follow-twitter") {
-                    return {
-                      ...task,
-                      isCompleted:
-                        twitterData.dataReceived.isFollowing === true,
-                      verificationError:
-                        twitterData.dataReceived.isFollowing === true
-                          ? null
-                          : "You're not following this account yet.",
-                    };
-                  }
-                  return task;
-                })
-              );
-              if (twitterData.dataReceived.isFollowing === true) {
-                setUserPoints(userPoints + 100);
-              }
-            }
-          } catch (error) {
-            console.error("Error verifying Twitter follow:", error);
-            setTasks((prevTasks) =>
-              prevTasks.map((task) =>
-                task.id === "follow-twitter"
-                  ? {
-                      ...task,
-                      verificationError:
-                        "Error verifying Twitter follow status.",
-                    }
-                  : task
-              )
-            );
+          // Add points for completed tasks
+          if (
+            data.tasks[taskId].completed &&
+            !tasks.find((t) => t.id === taskId)?.isCompleted
+          ) {
+            const points = taskId === "share-miniapp" ? 50 : 100;
+            setUserPoints((prev) => prev + points);
           }
         }
-      } else {
-        const errorData = await response.json();
-        console.error("Error verifying Farcaster follow:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-farcaster"
-              ? {
-                  ...task,
-                  verificationError:
-                    "Error verifying follow status. Please try again.",
-                }
-              : task
-          )
-        );
+      });
+
+      // Auto-verify Twitter if account is linked but not verified
+      if (
+        data.twitterAccount &&
+        user?.fid &&
+        (!data.tasks || data.tasks["follow-twitter"]?.completed !== true)
+      ) {
+        verifyTwitterFollow(user.fid, data.twitterAccount, data.walletAddress);
       }
     } catch (error) {
       console.error("Error verifying Farcaster follow:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-farcaster"
-            ? {
-                ...task,
-                verificationError: "Network error verifying follow status.",
-              }
-            : task
-        )
-      );
-    } finally {
-      if (isRefresh) {
-        setIsRefreshing(false);
-      } else {
-        setIsVerifyingFarcaster(false);
-      }
+      updateTask("follow-farcaster", {
+        verificationError: "Network error verifying follow status.",
+      });
     }
   };
 
-  const handleRefresh = () => {
-    if (user?.fid) {
-      verifyFarcasterFollow(user.fid, true);
-    }
-  };
-
+  // Function to verify Twitter follow
   const verifyTwitterFollow = async (
     fid: number,
     twitterUsername: string,
-    targetUsername: string,
     walletAddress: string
   ) => {
-    setIsVerifyingTwitter(true);
+    const twitterTask = tasks.find((task) => task.id === "follow-twitter");
+    if (!twitterTask?.targetUsername) return;
+
     try {
-      const response = await fetch(
-        "/api/a0x-framework/airdrop/verify-twitter-follow",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fid,
-            twitterUsername,
-            targetTwitterUsername: targetUsername,
-            walletAddress,
-          }),
-        }
-      );
-      const dataIsFollowing = await response.json();
-      return {
-        isCompleted: dataIsFollowing.dataReceived.isFollowing === true,
-        verificationError: dataIsFollowing.dataReceived.isFollowing
-          ? null
-          : "You're not following this account yet.",
-      };
+      const twitterData = await airdropApi.verifyTwitterFollow({
+        fid,
+        twitterUsername,
+        targetTwitterUsername: twitterTask.targetUsername,
+        walletAddress,
+      });
+
+      updateTask("follow-twitter", {
+        isCompleted: twitterData.dataReceived.isFollowing === true,
+        verificationError:
+          twitterData.dataReceived.isFollowing === true
+            ? null
+            : "You're not following this account yet.",
+      });
+
+      // Add points if newly completed
+      if (
+        twitterData.dataReceived.isFollowing === true &&
+        !twitterTask.isCompleted
+      ) {
+        setUserPoints((prev) => prev + 100);
+      }
     } catch (error) {
       console.error("Error verifying Twitter follow:", error);
-      return {
-        isCompleted: false,
-        verificationError: "Error verifying follow status",
-      };
-    } finally {
-      setIsVerifyingTwitter(false);
+      updateTask("follow-twitter", {
+        verificationError: "Error verifying Twitter follow status.",
+      });
     }
   };
 
-  // Initialize tasks
-  useEffect(() => {
-    setTasks([
-      {
-        id: "hold-a0x",
-        title: "Hold A0X Tokens",
-        description: `Hold at least ${parseTextMillion(
-          MIN_A0X_REQUIRED
-        )} A0X tokens`,
-        socialNetwork: "a0x",
-        isRequired: true,
-        isCompleted: false,
-        needsAuth: false,
-        icon: <Circle className="w-5 h-5 text-yellow-500" />,
-        verificationError: null,
-        points: 10,
-        pointsDescription: "10 points for holding 10M A0X, +1 point per 1M A0X",
-      },
-      {
-        id: "follow-farcaster",
-        title: "Follow on Farcaster",
-        description: "Follow @ai420z",
-        socialNetwork: "farcaster",
-        isRequired: true,
-        isCompleted: false,
-        needsAuth: true,
-        url: "https://farcaster.xyz/ai420z",
-        targetUsername: "ai420z",
-        icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
-        verificationError: null,
-        points: 100,
-      },
-      {
-        id: "follow-twitter",
-        title: "Follow on X (Twitter)",
-        description: "Follow @moonXBT_ai",
-        socialNetwork: "twitter",
-        isRequired: true,
-        isCompleted: false,
-        needsAuth: true,
-        url: "https://x.com/moonXBT_ai",
-        targetUsername: "moonXBT_ai",
-        icon: (
-          <Image
-            src="/x.png"
-            alt="X"
-            width={20}
-            height={20}
-            className="inline-block mr-2"
-          />
-        ),
-        verificationError: null,
-        points: 100,
-      },
-      {
-        id: "follow-tiktok",
-        title: "Follow on TikTok (Optional)",
-        description: "Follow @moonxbt.fun",
-        socialNetwork: "tiktok",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        url: "https://www.tiktok.com/@moonxbt.fun",
-        icon: <Play className="w-5 h-5 text-red-500" />,
-        verificationError: null,
-        targetUsername: "@moonxbt.fun",
-        points: 100,
-      },
-      {
-        id: "follow-instagram",
-        title: "Follow on Instagram (Optional)",
-        description: "Follow @moonxbt_ai",
-        socialNetwork: "instagram",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        url: "https://www.instagram.com/moonxbt_ai/",
-        icon: (
-          <svg
-            role="img"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5 text-pink-500"
-          >
-            <title>Instagram</title>
-            <path d="M7.0301.084c-1.2768.0602-2.1487.264-2.911.5634-.7888.3075-1.4575.72-2.1228 1.3877-.6652.6677-1.075 1.3368-1.3802 2.127-.2954.7638-.4956 1.6365-.552 2.914-.0564 1.2775-.0689 1.6882-.0626 4.947.0062 3.2586.0206 3.6671.0825 4.9473.061 1.2765.264 2.1482.5635 2.9107.308.7889.72 1.4573 1.388 2.1228.6679.6655 1.3365 1.0743 2.1285 1.38.7632.295 1.6361.4961 2.9134.552 1.2773.056 1.6884.069 4.9462.0627 3.2578-.0062 3.668-.0207 4.9478-.0814 1.28-.0607 2.147-.2652 2.9098-.5633.7889-.3086 1.4578-.72 2.1228-1.3881.665-.6682 1.0745-1.3378 1.3795-2.1284.2957-.7632.4966-1.636.552-2.9124.056-1.2809.0692-1.6898.063-4.948-.0063-3.2583-.021-3.6668-.0817-4.9465-.0607-1.2797-.264-2.1487-.5633-2.9117-.3084-.7889-.72-1.4568-1.3876-2.1228C21.2982 1.33 20.628.9208 19.8378.6165 19.074.321 18.2017.1197 16.9244.0645 15.6471.0093 15.236-.005 11.977.0014 8.718.0076 8.31.0215 7.0301.0839m.1402 21.6932c-1.17-.0509-1.8053-.2453-2.2287-.408-.5606-.216-.96-.4771-1.3819-.895-.422-.4178-.6811-.8186-.9-1.378-.1644-.4234-.3624-1.058-.4171-2.228-.0595-1.2645-.072-1.6442-.079-4.848-.007-3.2037.0053-3.583.0607-4.848.05-1.169.2456-1.805.408-2.2282.216-.5613.4762-.96.895-1.3816.4188-.4217.8184-.6814 1.3783-.9003.423-.1651 1.0575-.3614 2.227-.4171 1.2655-.06 1.6447-.072 4.848-.079 3.2033-.007 3.5835.005 4.8495.0608 1.169.0508 1.8053.2445 2.228.408.5608.216.96.4754 1.3816.895.4217.4194.6816.8176.9005 1.3787.1653.4217.3617 1.056.4169 2.2263.0602 1.2655.0739 1.645.0796 4.848.0058 3.203-.0055 3.5834-.061 4.848-.051 1.17-.245 1.8055-.408 2.2294-.216.5604-.4763.96-.8954 1.3814-.419.4215-.8181.6811-1.3783.9-.4224.1649-1.0577.3617-2.2262.4174-1.2656.0595-1.6448.072-4.8493.079-3.2045.007-3.5825-.006-4.848-.0608M16.953 5.5864A1.44 1.44 0 1 0 18.39 4.144a1.44 1.44 0 0 0-1.437 1.4424M5.8385 12.012c.0067 3.4032 2.7706 6.1557 6.173 6.1493 3.4026-.0065 6.157-2.7701 6.1506-6.1733-.0065-3.4032-2.771-6.1565-6.174-6.1498-3.403.0067-6.156 2.771-6.1496 6.1738M8 12.0077a4 4 0 1 1 4.008 3.9921A3.9996 3.9996 0 0 1 8 12.0077" />
-          </svg>
-        ),
-        verificationError: null,
-        targetUsername: "moonxbt_ai",
-        points: 100,
-      },
-      {
-        id: "join-telegram",
-        title: "Join Telegram (Optional)",
-        description: "Join A0X Portal group",
-        socialNetwork: "telegram",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        url: "https://t.me/A0X_Portal",
-        icon: <Send className="w-5 h-5 text-blue-500" />,
-        verificationError: null,
-        targetUsername: "A0X_Portal",
-        points: 100,
-      },
-      {
-        id: "follow-zora",
-        title: "Follow on Zora",
-        description: "Follow @moonxbt",
-        socialNetwork: "zora",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        url: "https://zora.co/moonxbt",
-        icon: (
-          <Image
-            src="/zora.png"
-            alt="Zora"
-            width={20}
-            height={20}
-            className="inline-block mr-2"
-          />
-        ),
-        verificationError: null,
-        points: 100,
-        targetUsername: "moonxbt",
-      },
-      {
-        id: "share-miniapp",
-        title: "Share Mini App",
-        description: "Share on Farcaster (50pts + 10/referral)",
-        socialNetwork: "farcaster",
-        isRequired: false,
-        isCompleted: false,
-        needsAuth: false,
-        icon: <MessageCircle className="w-5 h-5 text-purple-500" />,
-        verificationError: null,
-        points: 50,
-        pointsDescription: "50 points for sharing + 10 points per referral",
-      },
-    ]);
-  }, []);
-
-  // When tasks change and we have a user with FID, verify the follow
-  useEffect(() => {
-    if (user?.fid && tasks.length > 0) {
-      verifyFarcasterFollow(user.fid);
+  // Function to refresh verification
+  const handleRefreshVerification = useCallback(async () => {
+    if (user?.fid) {
+      await verifyFarcasterFollow(user.fid, true);
     }
-  }, [tasks.length, user?.fid]);
+  }, [user?.fid, tasks]);
 
   // Update balance and A0X task
   useEffect(() => {
@@ -624,702 +399,147 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       const balanceInEther = Number(formatEther(balanceInWei));
       const balanceStr = balanceInEther.toString();
 
-      console.log("Balance actual:", balanceInEther);
-      console.log("Balance mínimo requerido:", MIN_A0X_REQUIRED);
-      console.log(
-        "¿Cumple con el mínimo?:",
-        balanceInEther >= MIN_A0X_REQUIRED
-      );
-
-      // Actualizar el balance siempre
       setBalance(balanceStr);
       lastBalanceRef.current = balanceStr;
 
       const points = calculateA0XPoints(balanceInEther);
       lastPointsRef.current = points;
 
-      // Actualizar la tarea inmediatamente
-      setTasks((prevTasks) => {
-        const updatedTasks = prevTasks.map((task) => {
-          if (task.id === "hold-a0x") {
-            console.log("Actualizando tarea hold-a0x:", {
-              balance: balanceInEther,
-              isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
-              points: points,
-            });
-            return {
-              ...task,
-              isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
-              verificationError: null,
-              points,
-              pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
-            };
-          }
-          return task;
-        });
-        return updatedTasks;
+      updateTask("hold-a0x", {
+        isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
+        verificationError: null,
+        points,
+        pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
       });
     }
-  }, [tokenBalanceData]);
-
-  // Verify all tasks when session, wallet, or balance changes
-  // Only if there's a session, wallet connected, and balance available
-  // useEffect(() => {
-  //   if (address && balance !== null) {
-  //     verifyAllTasks();
-  //   }
-  // }, [address, balance]);
-
-  const verifyAllTasks = useCallback(async () => {
-    setIsVerifyingAll(true);
-    try {
-      if (user?.fid) {
-        // Verificar Farcaster
-        await verifyFarcasterFollow(user.fid);
-
-        // Si hay una cuenta de Twitter, verificar también
-        if (userInfo?.twitterAccount) {
-          try {
-            const twitterResponse = await fetch(
-              "/api/a0x-framework/airdrop/verify-twitter-follow",
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fid: user.fid,
-                  twitterUsername: userInfo.twitterAccount,
-                  targetTwitterUsername: tasks.find(
-                    (t) => t.id === "follow-twitter"
-                  )?.targetUsername,
-                  walletAddress: userInfo.walletAddress,
-                }),
-              }
-            );
-
-            if (twitterResponse.ok) {
-              const twitterData = await twitterResponse.json();
-              setTasks((prevTasks) =>
-                prevTasks.map((task) => {
-                  if (task.id === "follow-twitter") {
-                    return {
-                      ...task,
-                      isCompleted:
-                        twitterData.dataReceived.isFollowing === true,
-                      verificationError:
-                        twitterData.dataReceived.isFollowing === true
-                          ? null
-                          : "You're not following this account yet.",
-                    };
-                  }
-                  return task;
-                })
-              );
-            }
-          } catch (error) {
-            console.error("Error verifying Twitter follow:", error);
-            setTasks((prevTasks) =>
-              prevTasks.map((task) =>
-                task.id === "follow-twitter"
-                  ? {
-                      ...task,
-                      verificationError:
-                        "Error verifying Twitter follow status.",
-                    }
-                  : task
-              )
-            );
-          }
-        }
-      } else {
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => {
-            if (task.needsAuth) {
-              return { ...task, verificationError: "Sign in to verify." };
-            }
-            return task;
-          })
-        );
-      }
-    } catch (error) {
-      console.error("Task verification failed:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => ({
-          ...t,
-          verificationError: t.isCompleted
-            ? null
-            : "Network error during verification.",
-        }))
-      );
-    } finally {
-      setIsVerifyingAll(false);
-    }
-  }, [user?.fid, userInfo, tasks]);
-
-  const handleExternalLink = (url: string) => {
-    sdk.actions.openUrl(url);
-    // For tasks that can't be automatically verified (TikTok, Instagram, Telegram),
-    // we could mark them as "attempted" or "manually completed" if desired.
-    // For now, we don't change their `isCompleted` state here.
-    // If you want the user to mark them manually:
-    // if (taskId) {
-    //   setTasks(prevTasks => prevTasks.map(task =>
-    //     task.id === taskId ? { ...task, isCompleted: true } : task
-    //   ));
-    // }
-  };
-
-  // Function to manually verify a Farcaster follow task
-  const handleVerifyFarcasterFollow = async () => {
-    if (user?.fid) {
-      await verifyFarcasterFollow(user.fid, true);
-    } else {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-farcaster"
-            ? {
-                ...task,
-                verificationError:
-                  "You need to authenticate with Farcaster first.",
-              }
-            : task
-        )
-      );
-    }
-  };
-
-  const getTaskIcon = (id: string) => {
-    switch (id) {
-      case "follow-twitter":
-        return (
-          <Image
-            src="/x.png"
-            alt="X"
-            width={12}
-            height={12}
-            className="inline-block mr-2"
-          />
-        );
-      case "follow-zora":
-        return (
-          <Image
-            src="/zora.png"
-            alt="Zora"
-            width={20}
-            height={20}
-            className="inline-block mr-2"
-          />
-        );
-      case "follow-farcaster":
-        return <SiFarcaster className="inline-block mr-2 text-blue-200" />;
-      case "follow-tiktok":
-        return <FaTiktok className="inline-block mr-2 text-blue-200" />;
-      case "follow-instagram":
-        return <FaInstagram className="inline-block mr-2 text-blue-200" />;
-      case "join-telegram":
-        return <FaTelegram className="inline-block mr-2 text-blue-200" />;
-      default:
-        return null;
-    }
-  };
+  }, [tokenBalanceData, updateTask]);
 
   const renderTaskButton = (task: Task) => {
     if (task.socialNetwork === "a0x") {
       return (
-        <div className="flex flex-col items-end space-y-1 text-right">
-          {isLoadingTokenBalance && (
-            <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
-          )}
-          {!isLoadingTokenBalance && (
-            <>
-              <div className="flex items-center space-x-2">
-                <span
-                  className={`text-sm font-medium ${
-                    task.isCompleted
-                      ? "text-green-400"
-                      : balance !== null
-                      ? "text-red-300"
-                      : "text-gray-400"
-                  }`}
-                >
-                  {balance !== null
-                    ? `${parseTextMillion(
-                        Number(balance)
-                      )} / ${parseTextMillion(MIN_A0X_REQUIRED)} A0X`
-                    : isConnected
-                    ? "Loading..."
-                    : "Wallet not connected"}{" "}
-                </span>
-                {task.isCompleted && (
-                  <CheckCircle2 className="w-5 h-5 text-green-500" />
-                )}
-                <Button
-                  onClick={handleBuyA0X}
-                  className="bg-green-600 hover:bg-green-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-                  disabled={!isConnected}
-                >
-                  Buy A0X
-                </Button>
-              </div>
-              {task.verificationError && (
-                <span className="text-xs text-red-400">
-                  {task.verificationError}
-                </span>
-              )}
-            </>
-          )}
-        </div>
+        <A0XTaskButton
+          task={task}
+          balance={balance}
+          isLoadingTokenBalance={isLoadingTokenBalance}
+          isConnected={isConnected || wallets.length > 0}
+          userFid={user?.fid}
+          address={address}
+          isInMiniApp={isInMiniApp}
+        />
       );
     }
 
     if (task.id === "share-miniapp") {
       return (
-        <div className="flex flex-col items-end space-y-1 text-right">
-          <div className="flex items-center space-x-2">
-            {task.isCompleted ? (
-              <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-green-400">Shared</span>
-              </div>
-            ) : (
-              <Button
-                onClick={async () => {
-                  console.log("user", user, sdk.actions.composeCast);
-                  if (user?.fid) {
-                    try {
-                      // Usar el valor más reciente de los puntos
-                      const currentPoints =
-                        lastPointsRef.current !== null
-                          ? lastPointsRef.current
-                          : userPoints;
-
-                      const result = await sdk.actions.composeCast({
-                        text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${currentPoints} points so far!`,
-                        embeds: [
-                          `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
-                        ],
-                      });
-
-                      if (result?.cast) {
-                        setTasks((prevTasks) =>
-                          prevTasks.map((task) =>
-                            task.id === "share-miniapp"
-                              ? { ...task, isCompleted: true }
-                              : task
-                          )
-                        );
-                      }
-                    } catch (error) {
-                      console.error("Error sharing mini app:", error);
-                      setTasks((prevTasks) =>
-                        prevTasks.map((task) =>
-                          task.id === "share-miniapp"
-                            ? {
-                                ...task,
-                                verificationError: "Error sharing mini app",
-                              }
-                            : task
-                        )
-                      );
-                    }
-                  }
-                }}
-                className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-                disabled={!user?.fid}
-                title="Share on Farcaster"
-              >
-                Share <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-            )}
-          </div>
-          {task.verificationError && (
-            <span className="text-xs text-red-400">
-              {task.verificationError}
-            </span>
-          )}
-        </div>
+        <ShareMiniappButton
+          task={task}
+          user={user}
+          userPoints={userPoints}
+          lastPointsRef={lastPointsRef}
+          onTaskUpdate={updateTask}
+        />
       );
     }
 
-    if (task.needsAuth) {
-      // For Farcaster tasks
-      if (task.id === "follow-farcaster") {
-        return (
-          <div className="flex flex-col items-end space-y-1 text-right">
-            <div className="flex items-center space-x-2">
-              {isVerifyingFarcaster || isRefreshing ? (
-                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-              ) : task.isCompleted ? (
-                <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-xs text-green-400">Following</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-red-400">Not following</span>
-                  <Button
-                    onClick={() => handleExternalLink(task.url!)}
-                    className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-                    title={`Open ${task.socialNetwork} to follow`}
-                  >
-                    Follow <ExternalLink className="w-3 h-3 ml-1" />
-                  </Button>
-                  <Button
-                    onClick={handleVerifyFarcasterFollow}
-                    className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-                    disabled={isVerifyingFarcaster || !user?.fid}
-                    title="Verify following"
-                  >
-                    Verify
-                  </Button>
-                </div>
-              )}
-            </div>
-            {/* {task.verificationError && (
-              <span className="text-xs text-red-400">
-                {task.verificationError}
-              </span>
-            )} */}
-          </div>
-        );
-      }
-
-      // For Twitter tasks
-      if (task.id === "follow-twitter") {
-        // If there's a linked Twitter account
-        if (
-          userInfo?.twitterAccount &&
-          !isVerifyingTwitter &&
-          !isVerifyingFarcaster
-        ) {
-          return (
-            <div className="flex flex-col items-end space-y-1 text-right">
-              <div className="flex items-center space-x-2">
-                {isVerifyingAll && !task.isCompleted ? (
-                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                ) : task.isCompleted ? (
-                  <div className="flex items-center space-x-1 bg-green-500/20 rounded-none h-6 p-0 px-1">
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
-                    <span className="text-xs text-green-400">Following</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-blue-400">
-                      @{userInfo?.twitterAccount}
-                    </span>
-                    <Button
-                      onClick={() => handleExternalLink(task.url!)}
-                      className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-                      title={`Open Twitter to follow`}
-                    >
-                      Follow <ExternalLink className="w-3 h-3 ml-1" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-              {task.verificationError && (
-                <span className="text-xs text-red-400">
-                  {task.verificationError}
-                </span>
-              )}
-            </div>
-          );
-        }
-        // If there's no linked Twitter account
-        else {
-          return (
-            <div className="flex flex-col items-end space-y-1 text-right">
-              {isVerifyingTwitter || isVerifyingFarcaster ? (
-                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Button
-                    onClick={() =>
-                      handleExternalLink("https://farcaster.xyz/~/settings")
-                    }
-                    className="bg-purple-600 hover:bg-purple-700 text-xs h-6 p-0 px-1 rounded-none text-white"
-                    title="Verify on Farcaster"
-                  >
-                    Verify on Farcaster{" "}
-                    <ExternalLink className="w-3 h-3 ml-1" />
-                  </Button>
-                  <Button
-                    onClick={() => setShowTwitterInput(!showTwitterInput)}
-                    className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
-                    title="Add manually"
-                  >
-                    {showTwitterInput ? (
-                      <X className="w-3 h-3" />
-                    ) : (
-                      <span>+</span>
-                    )}
-                  </Button>
-                  <Button
-                    onClick={handleRefresh}
-                    disabled={isRefreshing || !user?.fid}
-                    className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
-                    title="Refresh verification"
-                  >
-                    {isRefreshing ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-3 h-3" />
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {showTwitterInput && (
-                <div className="mt-2 flex items-center space-x-2 animate-fade-in">
-                  <input
-                    type="text"
-                    placeholder="@username"
-                    value={twitterUsername}
-                    onChange={(e) =>
-                      setTwitterUsername(e.target.value.replace("@", ""))
-                    }
-                    className="bg-gray-700 text-white text-xs rounded-none px-2 py-1 flex-grow max-w-[120px]"
-                  />
-                  <Button
-                    onClick={() => {
-                      if (twitterUsername) {
-                        handleSubmitTwitterUsername(twitterUsername);
-                      }
-                    }}
-                    disabled={isSubmittingTwitter || !twitterUsername}
-                    className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
-                  >
-                    {isSubmittingTwitter ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      "Submit"
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              {!isVerifyingTwitter && !isVerifyingFarcaster && (
-                <div className="mt-1">
-                  <span className="text-xs text-gray-400">
-                    X account not linked
-                  </span>
-                </div>
-              )}
-
-              {task.verificationError && (
-                <span className="text-xs text-red-400">
-                  {task.verificationError}
-                </span>
-              )}
-            </div>
-          );
-        }
-      }
-
-      // For other tasks requiring authentication
+    if (task.id === "follow-farcaster") {
       return (
-        <div className="flex flex-col items-end space-y-1 text-right">
-          <div className="flex items-center space-x-2">
-            {isVerifyingAll && !task.isCompleted ? (
-              <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-            ) : task.isCompleted ? (
-              <div className="flex items-center space-x-1">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-green-400">Following</span>
-              </div>
-            ) : !isVerifyingTwitter ? (
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-400">
-                  Verifying Twitter...
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-red-400">Not following</span>
-                <Button
-                  onClick={() => handleExternalLink(task.url!)}
-                  className="bg-purple-600 hover:bg-purple-700 text-xs px-2 py-1 text-white"
-                  title={`Open ${task.socialNetwork} to follow`}
-                >
-                  Follow <ExternalLink className="w-3 h-3 ml-1" />
-                </Button>
-              </div>
-            )}
-          </div>
-          {task.verificationError && (
-            <span className="text-xs text-red-400">
-              {task.verificationError}
-            </span>
-          )}
-        </div>
+        <FarcasterTaskButton
+          task={task}
+          user={user}
+          isVerifyingFarcaster={false}
+          isRefreshing={false}
+          onTaskUpdate={updateTask}
+          onVerifyFollow={handleRefreshVerification}
+        />
       );
     }
 
-    // Tasks that only require an external link (TikTok, Instagram, Telegram)
+    if (task.id === "follow-twitter") {
+      return (
+        <TwitterTaskButton
+          task={task}
+          user={user}
+          userInfo={userInfo}
+          isVerifyingTwitter={false}
+          isVerifyingFarcaster={false}
+          isVerifyingAll={false}
+          isRefreshing={false}
+          onTaskUpdate={updateTask}
+          onTwitterSubmit={async () => {
+            if (
+              user?.fid &&
+              userInfo?.twitterAccount &&
+              task.targetUsername &&
+              userInfo?.walletAddress
+            ) {
+              await verifyTwitterFollow(
+                user.fid,
+                userInfo.twitterAccount,
+                userInfo.walletAddress
+              );
+            }
+          }}
+          onRefresh={handleRefreshVerification}
+        />
+      );
+    }
+
     if (
       task.id === "follow-tiktok" ||
       task.id === "follow-instagram" ||
       task.id === "join-telegram" ||
       task.id === "follow-zora"
     ) {
-      const isInstagram = task.id === "follow-instagram";
-      const isTiktok = task.id === "follow-tiktok";
-      const isZora = task.id === "follow-zora";
-
-      const showInput = isInstagram
-        ? showInstagramInput
-        : isTiktok
-        ? showTiktokInput
-        : isZora
-        ? showZoraInput
-        : showTelegramInput;
-      const setShowInput = isInstagram
-        ? setShowInstagramInput
-        : isTiktok
-        ? setShowTiktokInput
-        : isZora
-        ? setShowZoraInput
-        : setShowTelegramInput;
-      const username = isInstagram
-        ? instagramUsername
-        : isTiktok
-        ? tiktokUsername
-        : isZora
-        ? zoraUsername
-        : telegramUsername;
-      const setUsername = isInstagram
-        ? setInstagramUsername
-        : isTiktok
-        ? setTiktokUsername
-        : isZora
-        ? setZoraUsername
-        : setTelegramUsername;
-      const handleSubmit = isInstagram
-        ? handleRegisterInstagramTask
-        : isTiktok
-        ? handleRegisterTiktokTask
-        : isZora
-        ? handleRegisterZoraTask
-        : handleRegisterTelegramTask;
-      const isSubmitting = isInstagram
-        ? isSubmittingInstagram
-        : isTiktok
-        ? isSubmittingTiktok
-        : isZora
-        ? isSubmittingZora
-        : isSubmittingTelegram;
-      const socialName = isInstagram
-        ? "Instagram"
-        : isTiktok
-        ? "TikTok"
-        : isZora
-        ? "Zora"
-        : "Telegram";
-
-      const previousUsername: string | null =
-        isTiktok || isInstagram
-          ? userInfo?.tasks?.[task.id]?.verificationDetails?.checkedUsername
-            ? String(
-                userInfo.tasks[task.id].verificationDetails.checkedUsername
-              )
-            : null
-          : userInfo?.tasks?.[task.id]?.telegramUsername
-          ? String(userInfo.tasks[task.id].telegramUsername)
-          : null;
-
       return (
-        <div className="flex flex-col items-end space-y-1 text-right">
-          {!task.isCompleted && (
-            <div className="flex items-center space-x-2">
-              {isTiktok && previousUsername && (
-                <span className="text-xs text-gray-300">
-                  @{previousUsername}
-                </span>
-              )}
-              {isInstagram && previousUsername && (
-                <span className="text-xs text-gray-300">
-                  @{previousUsername}
-                </span>
-              )}
-              {!isTiktok && !isInstagram && userInfo && previousUsername && (
-                <span className="text-xs text-gray-300">
-                  @{previousUsername}
-                </span>
-              )}
-              <Button
-                onClick={() => handleExternalLink(task.url!)}
-                className="bg-gray-600 hover:bg-gray-700 text-xs p-0 px-1 h-6 text-white rounded-none"
-                title={`Open ${socialName}`}
-                size="sm"
-              >
-                Open Link <ExternalLink className="w-3 h-3 ml-1" />
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowInput(!showInput);
-                  if (previousUsername) {
-                    setUsername(previousUsername);
-                  }
-                }}
-                className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
-                title={`Add ${socialName} username manually`}
-                disabled={!user?.fid}
-              >
-                {showInput ? <X className="w-3 h-3" /> : <span>+</span>}
-              </Button>
-            </div>
-          )}
-
-          {showInput && !task.isCompleted && (
-            <div className="mt-2 flex items-center space-x-2 animate-fade-in w-full justify-end">
-              <input
-                type="text"
-                placeholder={`@${socialName} username`}
-                value={username}
-                onChange={(e) => setUsername(e.target.value.replace("@", ""))}
-                className="bg-gray-700 text-white text-xs rounded px-2 py-1 flex-grow max-w-[150px] sm:max-w-[120px]"
-              />
-              <Button
-                onClick={() => {
-                  if (username || !showInput) {
-                    handleSubmit(username);
-                  }
-                }}
-                disabled={isSubmitting || !username || !user?.fid}
-                className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  "Submit"
-                )}
-              </Button>
-            </div>
-          )}
-
-          {task.isCompleted && (
-            <div className="flex items-center space-x-1">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-xs text-green-400">Completed</span>
-            </div>
-          )}
-          {task.verificationError && (
-            <span className="text-xs text-red-400 mt-1 text-right w-full">
-              {task.verificationError}
-            </span>
-          )}
-        </div>
+        <SocialTaskButton
+          task={task}
+          user={user}
+          userInfo={userInfo}
+          onTaskUpdate={updateTask}
+          onUsernameSubmit={async () => {
+            switch (task.socialNetwork) {
+              case "instagram":
+                return airdropApi.registerSocialTask("instagram", {
+                  farcasterFid: user?.fid || 0,
+                  username: user?.username || "",
+                  targetUsername: task.targetUsername || "",
+                });
+              case "tiktok":
+                return airdropApi.registerSocialTask("tiktok", {
+                  farcasterFid: user?.fid || 0,
+                  username: user?.username || "",
+                  targetUsername: task.targetUsername || "",
+                });
+              case "telegram":
+                return airdropApi.registerSocialTask("telegram", {
+                  farcasterFid: user?.fid || 0,
+                  username: user?.username || "",
+                  targetUsername: task.targetUsername || "",
+                });
+              case "zora":
+                return airdropApi.registerSocialTask("zora", {
+                  farcasterFid: user?.fid || 0,
+                  username: user?.username || "",
+                  targetUsername: task.targetUsername || "",
+                });
+              default:
+                return Promise.resolve();
+            }
+          }}
+          isInMiniApp={isInMiniApp}
+        />
       );
     }
 
-    // Fallback para otras tareas no autenticadas (si las hubiera)
+    // Fallback button
     return (
       <div className="flex flex-col items-end space-y-1">
         <div className="flex items-center space-x-2">
           <Button
-            onClick={() => handleExternalLink(task.url!)}
+            onClick={() => task.url && sdk.actions.openUrl(task.url)}
             className="bg-gray-600 hover:bg-gray-700 text-sm p-0 px-1 h-6 text-white rounded-none"
           >
-            Open Link <ExternalLink className="w-3 h-3 ml-1" />
+            Open
           </Button>
           {task.isCompleted && (
             <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -1332,32 +552,13 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     );
   };
 
-  const requiredTasks = tasks.filter((task) => task.isRequired);
-  const optionalTasks = tasks.filter((task) => !task.isRequired);
-  const completedRequiredTasks = requiredTasks.filter(
-    (task) => task.isCompleted
-  ).length;
-  const completedOptionalTasks = optionalTasks.filter(
-    (task) => task.isCompleted
-  ).length;
+  const getTaskIcon = (id: string) => {
+    const task = tasks.find((t) => t.id === id);
+    return task?.icon || null;
+  };
 
-  useEffect(() => {
-    setAsciiLinesToShow(0);
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setAsciiLinesToShow(i);
-      if (i >= asciiLogoLines.length) clearInterval(interval);
-    }, 120);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Restore all variables and functions from the main repo:
   const allRequiredCompleted =
     isClient && isConnected && completedRequiredTasks === requiredTasks.length;
-
-  const [isClaiming, setIsClaiming] = useState(false);
-  const [claimMessage, setClaimMessage] = useState<string | null>(null);
 
   const handleClaimAirdrop = async () => {
     if (!allRequiredCompleted) {
@@ -1366,610 +567,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
     setIsClaiming(true);
     setClaimMessage(null);
-    // Here would be the logic to call your backend and register the claim
-    // For example:
-    // try {
-    //   const response = await fetch('/api/claim-airdrop', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({ walletAddress: address })
-    //   });
-    //   const data = await response.json();
-    //   if (response.ok) {
-    //     setClaimMessage(`Airdrop claimed successfully! Transaction: ${data.txHash}`);
-    //   } else {
-    //     setClaimMessage(`Error: ${data.message || 'Failed to claim airdrop.'}`);
-    //   }
-    // } catch (error) {
-    //   setClaimMessage("An error occurred while claiming. Please try again.");
-    // } finally {
-    //   setIsClaiming(false);
-    // }
 
-    // Placeholder:
+    // Placeholder for airdrop claim logic
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setClaimMessage(
       "Airdrop claim initiated! (This is a demo, no actual claim processed)"
     );
     setIsClaiming(false);
   };
-
-  // Button to refresh verifications
-  const refreshButton = (
-    <Button
-      onClick={verifyAllTasks}
-      // disabled={isVerifyingAll || !isConnected || balance === null} // TODO: Uncomment this when we have a balance check
-      disabled={isVerifyingAll}
-      className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 border-white/30 border rounded-none text-white"
-    >
-      {isVerifyingAll ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Verifying Tasks...
-        </>
-      ) : (
-        "Refresh All Task Verifications"
-      )}
-    </Button>
-  );
-
-  // Function to handle Twitter username submission
-  const handleSubmitTwitterUsername = async (username: string) => {
-    if (!username || !user?.fid || !userInfo) return;
-
-    setIsSubmittingTwitter(true);
-    try {
-      const response = await fetch(
-        "/api/a0x-framework/airdrop/verify-twitter-follow",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            fid: user.fid,
-            twitterUsername: username,
-            targetTwitterUsername: tasks.find((t) => t.id === "follow-twitter")
-              ?.targetUsername,
-            walletAddress: userInfo.walletAddress,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setUserInfo((prevUserInfo) => {
-          if (prevUserInfo && data.dataReceived.twitterAccount) {
-            return {
-              ...prevUserInfo,
-              twitterAccount: data.dataReceived.twitterAccount,
-            };
-          }
-          return prevUserInfo;
-        });
-        setTasks((prevTasks) =>
-          prevTasks.map((task) => {
-            if (task.id === "follow-twitter") {
-              return {
-                ...task,
-                isCompleted: data.dataReceived.isFollowing === true,
-                verificationError:
-                  data.dataReceived.isFollowing === true
-                    ? null
-                    : "You're not following this account on X.",
-              };
-            }
-            return task;
-          })
-        );
-        if (data.dataReceived.isFollowing === true) {
-          setShowTwitterInput(false);
-          setUserPoints(userPoints + 100);
-        }
-      } else {
-        const errorData = await response.json();
-        console.error("Error verifying Twitter follow:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-twitter"
-              ? {
-                  ...task,
-                  verificationError: "Verification failed. Please try again.",
-                }
-              : task
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error verifying Twitter follow:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-twitter"
-            ? {
-                ...task,
-                verificationError: "Network error during verification.",
-              }
-            : task
-        )
-      );
-    } finally {
-      setIsSubmittingTwitter(false);
-    }
-  };
-
-  const handleRegisterInstagramTask = async (usernameValue?: string) => {
-    if (!user?.fid) {
-      console.log("User FID not available to register Instagram task");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-instagram"
-            ? { ...task, verificationError: "Sign in with Farcaster first." }
-            : task
-        )
-      );
-      return;
-    }
-    if (!usernameValue && showInstagramInput) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-instagram"
-            ? { ...task, verificationError: "Instagram username is required." }
-            : task
-        )
-      );
-      return;
-    }
-
-    setIsSubmittingInstagram(true);
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === "follow-instagram"
-          ? { ...task, verificationError: null }
-          : task
-      )
-    );
-
-    try {
-      const response = await fetch(
-        "/api/a0x-framework/airdrop/task/instagram",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            farcasterFid: user.fid,
-            instagramUsername: usernameValue?.replace("@", ""),
-            targetInstagramUsername: tasks.find(
-              (t) => t.id === "follow-instagram"
-            )?.targetUsername,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        console.log("Instagram task registered with username:", usernameValue);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-instagram"
-              ? {
-                  ...task,
-                  isCompleted: true,
-                  verificationError: null,
-                  // Opcional: actualizar descripción o añadir un campo para el username enviado
-                  // description: usernameValue ? `Username @${usernameValue} submitted.` : task.description
-                }
-              : task
-          )
-        );
-        setShowInstagramInput(false);
-        setInstagramUsername(""); // Limpiar input
-      } else {
-        const errorData = await response.json();
-        console.error("Error registering Instagram task:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-instagram"
-              ? {
-                  ...task,
-                  verificationError:
-                    errorData.details ||
-                    "Failed to register. Please try again.",
-                }
-              : task
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error registering Instagram task:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-instagram"
-            ? { ...task, verificationError: "Network error. Please try again." }
-            : task
-        )
-      );
-    } finally {
-      setIsSubmittingInstagram(false);
-    }
-  };
-
-  const handleRegisterTiktokTask = async (usernameValue?: string) => {
-    if (!user?.fid) {
-      console.log("User FID not available to register TikTok task");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-tiktok"
-            ? { ...task, verificationError: "Sign in with Farcaster first." }
-            : task
-        )
-      );
-      return;
-    }
-    if (!usernameValue && showTiktokInput) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-tiktok"
-            ? { ...task, verificationError: "TikTok username is required." }
-            : task
-        )
-      );
-      return;
-    }
-
-    setIsSubmittingTiktok(true);
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === "follow-tiktok"
-          ? { ...task, verificationError: null }
-          : task
-      )
-    );
-
-    try {
-      const response = await fetch("/api/a0x-framework/airdrop/task/tiktok", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farcasterFid: user.fid,
-          tiktokUsername: usernameValue?.replace("@", ""),
-          targetTiktokUsername: tasks.find((t) => t.id === "follow-tiktok")
-            ?.targetUsername,
-        }),
-      });
-
-      if (response.ok) {
-        console.log("TikTok task registered with username:", usernameValue);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-tiktok"
-              ? {
-                  ...task,
-                  isCompleted: true,
-                  verificationError: null,
-                  // Opcional: actualizar descripción
-                  // description: usernameValue ? `Username @${usernameValue} submitted.` : task.description
-                }
-              : task
-          )
-        );
-        setShowTiktokInput(false);
-        setTiktokUsername(""); // Limpiar input
-      } else {
-        const errorData = await response.json();
-        console.error("Error registering TikTok task:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-tiktok"
-              ? {
-                  ...task,
-                  verificationError:
-                    errorData.details ||
-                    "Failed to register. Please try again.",
-                }
-              : task
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error registering TikTok task:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-tiktok"
-            ? { ...task, verificationError: "Network error. Please try again." }
-            : task
-        )
-      );
-    } finally {
-      setIsSubmittingTiktok(false);
-    }
-  };
-
-  const handleRegisterTelegramTask = async (usernameValue?: string) => {
-    if (!user?.fid) {
-      console.log("User FID not available to register Telegram task");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "join-telegram"
-            ? { ...task, verificationError: "Sign in with Farcaster first." }
-            : task
-        )
-      );
-      return;
-    }
-    // Considerar si el username es obligatorio cuando el input está visible
-    if (!usernameValue && showTelegramInput) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "join-telegram"
-            ? { ...task, verificationError: "Telegram username is required." }
-            : task
-        )
-      );
-      return;
-    }
-
-    setIsSubmittingTelegram(true);
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === "join-telegram"
-          ? { ...task, verificationError: null }
-          : task
-      )
-    );
-
-    try {
-      const response = await fetch("/api/a0x-framework/airdrop/task/telegram", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farcasterFid: user.fid,
-          telegramUsername: usernameValue?.replace("@", ""),
-          targetTelegramGroup: tasks.find((t) => t.id === "join-telegram")
-            ?.targetUsername,
-        }),
-      });
-
-      if (response.ok) {
-        console.log("Telegram task registered with username:", usernameValue);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "join-telegram"
-              ? {
-                  ...task,
-                  isCompleted: true,
-                  verificationError: null,
-                  // description: usernameValue ? `Username @${usernameValue} submitted.` : task.description
-                }
-              : task
-          )
-        );
-        setShowTelegramInput(false);
-        setTelegramUsername("");
-      } else {
-        const errorData = await response.json();
-        console.error("Error registering Telegram task:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "join-telegram"
-              ? {
-                  ...task,
-                  verificationError:
-                    errorData.details ||
-                    "Failed to register. Please try again.",
-                }
-              : task
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error registering Telegram task:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "join-telegram"
-            ? { ...task, verificationError: "Network error. Please try again." }
-            : task
-        )
-      );
-    } finally {
-      setIsSubmittingTelegram(false);
-    }
-  };
-
-  const handleRegisterZoraTask = async (usernameValue?: string) => {
-    if (!user?.fid) {
-      console.log("User FID not available to register Zora task");
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-zora"
-            ? { ...task, verificationError: "Sign in with Farcaster first." }
-            : task
-        )
-      );
-      return;
-    }
-    if (!usernameValue && showZoraInput) {
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-zora"
-            ? { ...task, verificationError: "Zora username is required." }
-            : task
-        )
-      );
-      return;
-    }
-
-    setIsSubmittingZora(true);
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
-        task.id === "follow-zora" ? { ...task, verificationError: null } : task
-      )
-    );
-
-    try {
-      const zoraTask = tasks.find((t) => t.id === "follow-zora");
-      if (!zoraTask?.targetUsername) {
-        throw new Error("Target Zora username not found");
-      }
-
-      const response = await fetch("/api/a0x-framework/airdrop/task/zora", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farcasterFid: user.fid,
-          zoraUsername: usernameValue?.replace("@", ""),
-          targetZoraUsername: zoraTask.targetUsername,
-        }),
-      });
-
-      if (response.ok) {
-        console.log("Zora task registered with username:", usernameValue);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-zora"
-              ? {
-                  ...task,
-                  isCompleted: true,
-                  verificationError: null,
-                }
-              : task
-          )
-        );
-        setShowZoraInput(false);
-        setZoraUsername("");
-      } else {
-        const errorData = await response.json();
-        console.error("Error registering Zora task:", errorData);
-        setTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === "follow-zora"
-              ? {
-                  ...task,
-                  verificationError:
-                    errorData.details ||
-                    "Failed to register. Please try again.",
-                }
-              : task
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error registering Zora task:", error);
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.id === "follow-zora"
-            ? { ...task, verificationError: "Network error. Please try again." }
-            : task
-        )
-      );
-    } finally {
-      setIsSubmittingZora(false);
-    }
-  };
-
-  const handleBuyA0X = async () => {
-    try {
-      const result = await sdk.actions.swapToken({
-        sellToken: `eip155:8453/erc20:${USDC_ADDRESS}`,
-        buyToken: `eip155:8453/erc20:${A0X_TOKEN_ADDRESS}`,
-        sellAmount: "10000000", // 10 USDC
-      });
-
-      if (result.success && user?.fid) {
-        console.log("Swap successful:", result.swap.transactions);
-
-        // Actualizar el balance en el backend
-        try {
-          const updateResponse = await fetch(
-            "/api/a0x-framework/airdrop/update-balance",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                farcasterFid: user.fid,
-                walletAddress: address,
-                transactions: result.swap.transactions,
-                timestamp: new Date().toISOString(),
-                currentBalance: balance,
-              }),
-            }
-          );
-
-          if (!updateResponse.ok) {
-            console.error(
-              "Error updating balance in backend:",
-              await updateResponse.json()
-            );
-          }
-        } catch (updateError) {
-          console.error("Error calling update-balance endpoint:", updateError);
-        }
-      } else {
-        console.error("Swap failed:", result);
-      }
-    } catch (error) {
-      console.error("Error initiating swap:", error);
-    }
-  };
-
-  const verifyA0XBalance = useCallback(async () => {
-    if (!address || !isConnected) return;
-
-    try {
-      const response = await fetch(
-        "/api/a0x-framework/airdrop/update-balance",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            farcasterFid: user?.fid,
-            walletAddress: address,
-            transactions: [], // No hay transacciones específicas, solo actualización de balance
-            timestamp: new Date().toISOString(),
-            currentBalance: balance,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Balance updated in backend:", data);
-
-        // Actualizar el estado de la tarea si el balance es suficiente
-        if (data.dataReceived?.tasks?.["hold-a0x"]?.completed) {
-          const balanceInEther = Number(
-            data.dataReceived.tasks["hold-a0x"].currentBalance
-          );
-          const points = Math.floor(balanceInEther / 1000000); // 1 punto por millón, sin límite máximo
-          setTasks((prevTasks) =>
-            prevTasks.map((task) =>
-              task.id === "hold-a0x"
-                ? {
-                    ...task,
-                    isCompleted: true,
-                    verificationError: null,
-                    points,
-                    pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
-                  }
-                : task
-            )
-          );
-          setUserPoints(userPoints + points);
-        }
-      } else {
-        console.error(
-          "Error updating balance in backend:",
-          await response.json()
-        );
-      }
-    } catch (error) {
-      console.error("Error verifying A0X balance:", error);
-    }
-  }, [address, isConnected, setTasks, balance]);
-
-  // Agregar un efecto para verificar el balance cuando cambia
-  useEffect(() => {
-    if (balance !== null && isConnected) {
-      verifyA0XBalance();
-    }
-  }, [balance, isConnected, verifyA0XBalance]);
-
-  console.log(tasks[0]);
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
@@ -1999,6 +604,12 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             <p className="text-blue-100 text-[11px] sm:text-xs tracking-wide">
               Complete tasks to earn your airdrop!
             </p>
+            {/* Mini App Detection Info */}
+            {isInMiniApp !== null && (
+              <p className="text-blue-200 text-[10px] mt-1">
+                {isInMiniApp ? "Running in Mini App" : "Running in Web Browser"}
+              </p>
+            )}
           </div>
           {isConnected && balance !== null && (
             <div className="w-full flex flex-col items-center my-3">
@@ -2066,6 +677,65 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           <div className="min-h-[600px] flex flex-col justify-start">
             {activeTab === "tasks" ? (
               <div className="space-y-8">
+                {/* Wallet Connection Section */}
+                {!isInMiniApp && (
+                  <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center w-full">
+                    {!ready ? (
+                      <div className="flex flex-col items-center space-y-2">
+                        <Loader2 className="w-5 h-5 text-blue-200 animate-spin" />
+                        <span className="text-blue-200 text-sm">
+                          Loading...
+                        </span>
+                      </div>
+                    ) : !authenticated ? (
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Wallet className="w-5 h-5 text-blue-200" />
+                          <span className="text-blue-200 text-sm font-bold tracking-wide">
+                            WALLET CONNECTION
+                          </span>
+                        </div>
+                        <p className="text-blue-100 text-xs mb-3">
+                          Connect your wallet to participate in the airdrop
+                        </p>
+                        <Button
+                          onClick={handleLogin}
+                          disabled={disableLogin}
+                          className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 w-full rounded-none tracking-wider"
+                        >
+                          <Wallet className="w-4 h-4 mr-2" />
+                          CONNECT WALLET
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <CheckCircle2 className="w-5 h-5 text-green-400" />
+                          <span className="text-green-400 text-sm font-bold tracking-wide">
+                            WALLET CONNECTED
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-around w-full">
+                          {wallets[0]?.address && (
+                            <p className="text-blue-100 text-sm">
+                              {wallets[0].address.slice(0, 6)}...
+                              {wallets[0].address.slice(-4)}
+                            </p>
+                          )}
+                          <div className="flex space-x-2">
+                            <Button
+                              onClick={handleSignout}
+                              className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-1 text-xs rounded-none"
+                            >
+                              DISCONNECT
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <div className="relative flex items-center justify-between">
                     <h2 className="text-sm sm:text-base font-bold mb-1 text-white border-b border-white/30 pb-1 tracking-widest">
@@ -2088,14 +758,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                       >
                         <div className="flex items-center space-x-3">
                           {task.isCompleted ? (
-                            <span className="text-green-300 flex-1">[✓]</span>
+                            <span className="text-green-300 flex-1 min-w-max">
+                              [✓]
+                            </span>
                           ) : (
-                            <span className="text-white flex-1">[ ]</span>
+                            <span className="text-white flex-1 min-w-max">
+                              [ ]
+                            </span>
                           )}
                           <div>
-                            <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
+                            <div className="text-blue-100 font-bold flex items-center text-xs sm:text-sm justify-start gap-2 w-full">
                               {getTaskIcon(task.id)}
-                              {task.title}
+                              <span className="w-fit">{task.title}</span>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -2109,7 +783,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            </span>
+                            </div>
                             <div className="text-[11px] text-blue-50 break-words max-w-full">
                               {task.description}
                             </div>
@@ -2136,14 +810,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                       >
                         <div className="flex items-center space-x-3">
                           {task.isCompleted ? (
-                            <span className="text-green-300">[✓]</span>
+                            <span className="text-green-300 flex-1 min-w-max">
+                              [✓]
+                            </span>
                           ) : (
-                            <span className="text-white">[ ]</span>
+                            <span className="text-white flex-1 min-w-max">
+                              [ ]
+                            </span>
                           )}
                           <div>
-                            <span className="text-blue-100 font-bold flex items-center text-xs sm:text-sm">
+                            <div className="text-blue-100 font-bold flex items-center text-xs sm:text-sm justify-start gap-2 w-full">
                               {getTaskIcon(task.id)}
-                              {task.title}
+                              <span className="w-fit">{task.title}</span>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -2157,7 +835,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                            </span>
+                            </div>
                             <div className="text-[11px] text-blue-50 break-words max-w-full">
                               {task.description}
                             </div>
@@ -2170,7 +848,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     ))}
                   </div>
                 </div>
-                <div className="w-full flex justify-end">{refreshButton}</div>
                 <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center mt-2 w-full">
                   <pre className="text-white text-xs mb-2 select-none">
                     [{"=".repeat(completedRequiredTasks)}
@@ -2187,7 +864,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 <div className="w-full flex flex-col items-center mt-1">
                   <Button
                     onClick={handleClaimAirdrop}
-                    // disabled={!allRequiredCompleted || isClaiming}
                     disabled={true}
                     className="w-full bg-green-600 hover:bg-green-700 mt-2"
                   >

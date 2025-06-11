@@ -7,14 +7,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Inter } from "next/font/google";
 import { useEffect } from "react";
 import { WagmiProvider } from "wagmi";
+import { PrivyProvider } from "@privy-io/react-auth";
 import "./globals.css";
+
 const farcasterAuthConfig = {
   rpcUrl: "https://mainnet.optimism.io",
   domain: process.env.NEXT_PUBLIC_URL || "localhost:3000",
   siweUri: `${process.env.NEXT_PUBLIC_URL || "http://localhost:3000"}/login`,
 };
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+});
 const queryClient = new QueryClient();
 
 export default function RootLayout({
@@ -26,16 +32,32 @@ export default function RootLayout({
     sdk.actions.ready();
   }, []);
 
+  const privyAppId = "cm6z8adlq002t9ycwuct6imif";
+
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <QueryClientProvider client={queryClient}>
-          <WagmiProvider config={config}>
-            <AuthKitProvider config={farcasterAuthConfig}>
-              {children}
-            </AuthKitProvider>
-          </WagmiProvider>
-        </QueryClientProvider>
+      <body className={`${inter.variable} font-inter`}>
+        <PrivyProvider
+          appId={privyAppId}
+          config={{
+            loginMethods: ["wallet", "telegram", "twitter", "farcaster"],
+            appearance: {
+              theme: "dark",
+              accentColor: "#1752F0",
+            },
+            embeddedWallets: {
+              createOnLogin: "users-without-wallets",
+            },
+          }}
+        >
+          <QueryClientProvider client={queryClient}>
+            <WagmiProvider config={config}>
+              <AuthKitProvider config={farcasterAuthConfig}>
+                {children}
+              </AuthKitProvider>
+            </WagmiProvider>
+          </QueryClientProvider>
+        </PrivyProvider>
       </body>
     </html>
   );

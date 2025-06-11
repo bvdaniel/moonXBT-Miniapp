@@ -28,6 +28,7 @@
     "@farcaster/frame-wagmi-connector": "^0.0.42",
     "@neynar/nodejs-sdk": "^2.19.0",
     "@neynar/react": "^0.9.7",
+    "@privy-io/react-auth": "^2.14.1",
     "@radix-ui/react-dialog": "^1.1.11",
     "@radix-ui/react-label": "^2.1.1",
     "@radix-ui/react-slot": "^1.2.0",

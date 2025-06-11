@@ -32,11 +32,13 @@ export default function RootLayout({
     sdk.actions.ready();
   }, []);
 
+  const privyAppId = "cm6z8adlq002t9ycwuct6imif";
+
   return (
     <html lang="en">
       <body className={`${inter.variable} font-inter`}>
         <PrivyProvider
-          appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+          appId={privyAppId}
           config={{
             loginMethods: ["wallet", "telegram", "twitter", "farcaster"],
             appearance: {

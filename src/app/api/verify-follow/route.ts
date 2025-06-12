@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     if (!shouldRefresh) {
       console.log("Entrando en verificación A0X");
       try {
-        const a0xApiUrl = `${A0X_AGENT_API_URL}/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+        const a0xApiUrl = `${A0X_AGENT_API_URL}/moonxbt/airdrop/participant-exists?fid=${fid}`;
         console.log("URL A0X:", a0xApiUrl);
 
         const a0xResponse = await fetch(a0xApiUrl, {

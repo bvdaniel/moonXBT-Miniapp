@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     body.farcasterFid = body.fid;
 
     const response = await axios.post(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/verify-twitter-follow`,
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/verify-twitter-follow`,
       body
     );
 

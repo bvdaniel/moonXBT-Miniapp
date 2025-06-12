@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, ExternalLink, Loader2, X } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
 import { UserInfo } from "@/services/airdropApi";
 import sdk from "@farcaster/frame-sdk";
+import { CheckCircle2, ExternalLink, Loader2, X } from "lucide-react";
+import { useState } from "react";
 
 interface SocialTaskButtonProps {
   task: Task;
@@ -27,7 +27,11 @@ export default function SocialTaskButton({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleExternalLink = (url: string) => {
-    sdk.actions.openUrl(url);
+    if (isInMiniApp) {
+      sdk.actions.openUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   const getSocialName = () => {
@@ -57,7 +61,7 @@ export default function SocialTaskButton({
   };
 
   const handleSubmit = async () => {
-    if (!username || !user?.fid) return;
+    if (!username || (isInMiniApp && !user?.fid)) return;
 
     setIsSubmitting(true);
     try {
@@ -86,7 +90,7 @@ export default function SocialTaskButton({
           )}
           <Button
             onClick={() => handleExternalLink(task.url!)}
-            className="bg-gray-600 hover:bg-gray-700 text-xs p-0 px-1 h-6 text-white rounded-none"
+            className="bg-gray-800 hover:bg-gray-900 text-xs p-0 px-1 h-6 text-white rounded-none"
             title={`Open ${socialName}`}
             size="sm"
           >
@@ -99,7 +103,7 @@ export default function SocialTaskButton({
                 setUsername(previousUsername);
               }
             }}
-            className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
+            className="bg-gray-800 hover:bg-gray-900 text-xs text-white rounded-none h-6 w-6 p-0"
             title={`Add ${socialName} username manually`}
           >
             {showInput ? <X className="w-3 h-3" /> : <span>+</span>}
@@ -114,13 +118,11 @@ export default function SocialTaskButton({
             placeholder={`@${socialName} username`}
             value={username}
             onChange={(e) => setUsername(e.target.value.replace("@", ""))}
-            className="bg-gray-700 text-white text-xs rounded px-2 py-1 flex-grow max-w-[150px] sm:max-w-[120px]"
+            className="bg-gray-800 text-white text-xs rounded px-2 py-1 flex-grow max-w-[150px] sm:max-w-[120px]"
           />
           <Button
             onClick={handleSubmit}
-            disabled={
-              isSubmitting || !username || (isInMiniApp ? !user?.fid : false)
-            }
+            disabled={isSubmitting}
             className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
           >
             {isSubmitting ? (

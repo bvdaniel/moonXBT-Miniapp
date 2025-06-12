@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2, X } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
 import sdk from "@farcaster/frame-sdk";
+import { useState } from "react";
 
 interface FarcasterTaskButtonProps {
   task: Task;
@@ -9,7 +10,8 @@ interface FarcasterTaskButtonProps {
   isVerifyingFarcaster: boolean;
   isRefreshing: boolean;
   onTaskUpdate: (taskId: string, updates: Partial<Task>) => void;
-  onVerifyFollow: () => Promise<void>;
+  onVerifyFollow: (username: string) => Promise<void>;
+  isInMiniApp?: boolean | null;
 }
 
 export default function FarcasterTaskButton({
@@ -19,18 +21,44 @@ export default function FarcasterTaskButton({
   isRefreshing,
   onTaskUpdate,
   onVerifyFollow,
+  isInMiniApp,
 }: FarcasterTaskButtonProps) {
+  const [showInput, setShowInput] = useState(false);
+  const [username, setUsername] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleExternalLink = (url: string) => {
-    sdk.actions.openUrl(url);
+    if (isInMiniApp) {
+      sdk.actions.openUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   const handleVerifyFarcasterFollow = async () => {
     if (user?.fid) {
-      await onVerifyFollow();
+      await onVerifyFollow(username);
     } else {
       onTaskUpdate("follow-farcaster", {
         verificationError: "You need to authenticate with Farcaster first.",
       });
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!username) return;
+    setIsSubmitting(true);
+    try {
+      await onVerifyFollow(username);
+      setShowInput(false);
+      setUsername("");
+    } catch (error) {
+      console.error("Error verifying Farcaster follow:", error);
+      onTaskUpdate("follow-farcaster", {
+        verificationError: "Failed to verify. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -54,6 +82,15 @@ export default function FarcasterTaskButton({
             >
               Follow <ExternalLink className="w-3 h-3 ml-1" />
             </Button>
+            {!isInMiniApp && (
+              <Button
+                onClick={() => setShowInput(!showInput)}
+                className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
+                title="Add Farcaster username manually"
+              >
+                {showInput ? <X className="w-3 h-3" /> : <span>+</span>}
+              </Button>
+            )}
             <Button
               onClick={handleVerifyFarcasterFollow}
               className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
@@ -65,6 +102,35 @@ export default function FarcasterTaskButton({
           </div>
         )}
       </div>
+
+      {showInput && !task.isCompleted && !isInMiniApp && (
+        <div className="mt-2 flex items-center space-x-2 animate-fade-in w-full justify-end">
+          <input
+            type="text"
+            placeholder="@Farcaster username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.replace("@", ""))}
+            className="bg-gray-700 text-white text-xs rounded px-2 py-1 flex-grow max-w-[150px] sm:max-w-[120px]"
+          />
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              "Submit"
+            )}
+          </Button>
+        </div>
+      )}
+
+      {task.verificationError && (
+        <span className="text-xs text-red-400 mt-1 text-right w-full">
+          {task.verificationError}
+        </span>
+      )}
     </div>
   );
 }

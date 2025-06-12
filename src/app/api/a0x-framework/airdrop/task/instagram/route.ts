@@ -8,9 +8,10 @@ import { NextRequest, NextResponse } from "next/server";
 // } = req.body;
 
 interface InstagramTaskBody {
-  farcasterFid: number;
+  farcasterFid: number | null;
   instagramUsername: string;
   targetInstagramUsername: string;
+  id: string;
 }
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";
@@ -23,9 +24,9 @@ export async function POST(request: NextRequest) {
   try {
     const body: InstagramTaskBody = await request.json();
 
-    if (!body.farcasterFid) {
+    if (!body.farcasterFid && !body.id) {
       return NextResponse.json(
-        { error: "farcasterFid is required" },
+        { error: "farcasterFid or id is required" },
         { status: 400 }
       );
     }
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     console.log("Registering Instagram task intent:", body);
 
     const response = await axios.post(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/task/instagram`,
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/task/instagram`,
       body
     );
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "Instagram task intent registered successfully.",
-        fid: body.farcasterFid,
+        fid: body.farcasterFid || body.id,
         taskMarkedCompleted: false,
         dataReceived: response.data,
       },

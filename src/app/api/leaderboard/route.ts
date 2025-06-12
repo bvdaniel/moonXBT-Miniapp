@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   try {
     // Obtener los datos del leaderboard desde la API de A0X
     const response = await axios.get(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/leaderboard`
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/leaderboard`
     );
 
     if (response.status !== 200) {

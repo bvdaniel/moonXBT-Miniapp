@@ -5,6 +5,7 @@ interface TikTokTaskBody {
   farcasterFid: number;
   tiktokUsername: string;
   targetTiktokUsername: string;
+  id: string;
 }
 
 const A0X_AGENT_API_URL = process.env.A0X_AGENT_API_URL || "";
@@ -17,9 +18,9 @@ export async function POST(request: NextRequest) {
   try {
     const body: TikTokTaskBody = await request.json();
 
-    if (!body.farcasterFid) {
+    if (!body.farcasterFid && !body.id) {
       return NextResponse.json(
-        { error: "farcasterFid is required" },
+        { error: "farcasterFid or id is required" },
         { status: 400 }
       );
     }
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.log("Registering TikTok task intent:", body);
 
     const response = await axios.post(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/task/tiktok`,
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/task/tiktok`,
       body
     );
 
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message: "TikTok task intent registered successfully.",
-        fid: body.farcasterFid,
+        fid: body.farcasterFid || body.id,
         taskMarkedCompleted: false,
         dataReceived: response.data,
       },

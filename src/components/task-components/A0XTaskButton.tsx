@@ -83,7 +83,7 @@ export default function A0XTaskButton({
       } else {
         // Redirect to Uniswap for external browser
         console.log("Redirecting to Uniswap (Browser environment)");
-        if (isInMiniApp === false) {
+        if (!isInMiniApp) {
           // We're definitely in a browser, use window.open
           window.open(UNISWAP_SWAP_URL, "_blank");
         } else {

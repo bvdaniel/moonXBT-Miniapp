@@ -113,8 +113,12 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       addressRef.current = wallets[0].address;
       return wallets[0].address.toLowerCase();
     }
+    if (address) {
+      addressRef.current = address;
+      return address.toLowerCase();
+    }
     return "";
-  }, [wallets]);
+  }, [wallets, address]);
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useEffect(() => {
@@ -347,7 +351,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   // Function to verify Twitter follow
   const verifyTwitterFollow = async (
-    fid: number,
+    fid: number | string | null,
     twitterUsername: string,
     walletAddress: string
   ) => {
@@ -449,7 +453,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           isVerifyingFarcaster={false}
           isRefreshing={false}
           onTaskUpdate={updateTask}
-          onVerifyFollow={handleRefreshVerification}
+          onVerifyFollow={async (username) => {
+            if (isInMiniApp) {
+              await handleRefreshVerification();
+            } else {
+              await airdropApi.registerSocialTask("farcaster", {
+                farcasterFid: null,
+                username: username,
+                targetUsername: task.targetUsername || "",
+                walletAddress: addressLowerCase || "",
+              });
+            }
+          }}
         />
       );
     }
@@ -466,20 +481,16 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           isRefreshing={false}
           onTaskUpdate={updateTask}
           onTwitterSubmit={async () => {
-            if (
-              user?.fid &&
-              userInfo?.twitterAccount &&
-              task.targetUsername &&
-              userInfo?.walletAddress
-            ) {
+            if (task.targetUsername && userInfo?.walletAddress) {
               await verifyTwitterFollow(
-                user.fid,
-                userInfo.twitterAccount,
+                user?.fid || addressLowerCase || "",
+                userInfo.twitterAccount || "",
                 userInfo.walletAddress
               );
             }
           }}
           onRefresh={handleRefreshVerification}
+          isInMiniApp={isInMiniApp}
         />
       );
     }
@@ -496,32 +507,150 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           user={user}
           userInfo={userInfo}
           onTaskUpdate={updateTask}
-          onUsernameSubmit={async () => {
-            switch (task.socialNetwork) {
+          onUsernameSubmit={async (platform, username) => {
+            switch (platform) {
               case "instagram":
-                return airdropApi.registerSocialTask("instagram", {
-                  farcasterFid: user?.fid || 0,
-                  username: user?.username || "",
-                  targetUsername: task.targetUsername || "",
-                });
+                const instagramResponse = await airdropApi.registerSocialTask(
+                  "instagram",
+                  {
+                    farcasterFid: user?.fid || null,
+                    username: username,
+                    targetUsername: task.targetUsername || "",
+                    walletAddress: addressLowerCase || "",
+                  }
+                );
+                if (instagramResponse.dataReceived.success === true) {
+                  setUserInfo((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      tasks: {
+                        ...prev.tasks,
+                        [task.id]: {
+                          ...prev.tasks[task.id],
+                          verificationDetails: {
+                            ...prev.tasks[task.id].verificationDetails,
+                            checkedUsername: username,
+                          },
+                        },
+                      },
+                    };
+                  });
+                }
               case "tiktok":
-                return airdropApi.registerSocialTask("tiktok", {
-                  farcasterFid: user?.fid || 0,
-                  username: user?.username || "",
-                  targetUsername: task.targetUsername || "",
-                });
+                const tiktokResponse = await airdropApi.registerSocialTask(
+                  "tiktok",
+                  {
+                    farcasterFid: user?.fid || null,
+                    username: username,
+                    targetUsername: task.targetUsername || "",
+                    walletAddress: addressLowerCase || "",
+                  }
+                );
+                if (tiktokResponse.dataReceived.success === true) {
+                  setUserInfo((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      tasks: {
+                        ...prev.tasks,
+                        [task.id]: {
+                          ...prev.tasks[task.id],
+                          verificationDetails: {
+                            ...prev.tasks[task.id].verificationDetails,
+                            checkedUsername: username,
+                          },
+                        },
+                      },
+                    };
+                  });
+                }
               case "telegram":
-                return airdropApi.registerSocialTask("telegram", {
-                  farcasterFid: user?.fid || 0,
-                  username: user?.username || "",
-                  targetUsername: task.targetUsername || "",
-                });
+                const telegramResponse = await airdropApi.registerSocialTask(
+                  "telegram",
+                  {
+                    farcasterFid: user?.fid || null,
+                    username: username,
+                    targetUsername: task.targetUsername || "",
+                    walletAddress: addressLowerCase || "",
+                  }
+                );
+
+                if (telegramResponse.dataReceived.success === true) {
+                  setUserInfo((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      tasks: {
+                        ...prev.tasks,
+                        [task.id]: {
+                          ...prev.tasks[task.id],
+                          telegramUsername: username,
+                        },
+                      },
+                    };
+                  });
+                }
+
               case "zora":
-                return airdropApi.registerSocialTask("zora", {
-                  farcasterFid: user?.fid || 0,
-                  username: user?.username || "",
-                  targetUsername: task.targetUsername || "",
-                });
+                const zoraResponse = await airdropApi.registerSocialTask(
+                  "zora",
+                  {
+                    farcasterFid: user?.fid || null,
+                    username: username,
+                    targetUsername: task.targetUsername || "",
+                    walletAddress: addressLowerCase || "",
+                  }
+                );
+
+                if (zoraResponse.dataReceived.success === true) {
+                  setUserInfo((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      tasks: {
+                        ...prev.tasks,
+                        [task.id]: {
+                          ...prev.tasks[task.id],
+                          verificationDetails: {
+                            ...prev.tasks[task.id].verificationDetails,
+                            checkedUsername: username,
+                          },
+                        },
+                      },
+                    };
+                  });
+                }
+
+              case "farcaster":
+                const farcasterResponse = await airdropApi.registerSocialTask(
+                  "farcaster",
+                  {
+                    farcasterFid: null,
+                    username: username,
+                    targetUsername: task.targetUsername || "",
+                    walletAddress: addressLowerCase || "",
+                  }
+                );
+                if (farcasterResponse.dataReceived.success === true) {
+                  setUserInfo((prev) => {
+                    if (!prev) return prev;
+                    return {
+                      ...prev,
+                      tasks: {
+                        ...prev.tasks,
+                        [task.id]: {
+                          ...prev.tasks[task.id],
+                          verificationDetails: {
+                            ...prev.tasks[task.id].verificationDetails,
+                            checkedUsername: username,
+                          },
+                        },
+                      },
+                    };
+                  });
+                }
+
               default:
                 return Promise.resolve();
             }
@@ -805,7 +934,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     {optionalTasks.map((task) => (
                       <div
                         key={task.id}
-                        className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5"
+                        className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-2 flex flex-col sm:flex-row items-start sm:items-center justify-between w-full mb-0.5 gap-2"
                       >
                         <div className="flex items-center space-x-3">
                           {task.isCompleted ? (
@@ -890,7 +1019,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 </div>
               </div>
             ) : (
-              <LeaderboardTab />
+              <LeaderboardTab isInMiniApp={isInMiniApp || false} />
             )}
           </div>
         </div>

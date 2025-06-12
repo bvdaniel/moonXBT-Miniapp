@@ -22,6 +22,7 @@ interface TwitterTaskButtonProps {
   onTaskUpdate: (taskId: string, updates: Partial<Task>) => void;
   onTwitterSubmit: (username: string) => Promise<void>;
   onRefresh: () => void;
+  isInMiniApp: boolean | null;
 }
 
 export default function TwitterTaskButton({
@@ -35,17 +36,22 @@ export default function TwitterTaskButton({
   onTaskUpdate,
   onTwitterSubmit,
   onRefresh,
+  isInMiniApp,
 }: TwitterTaskButtonProps) {
   const [showTwitterInput, setShowTwitterInput] = useState(false);
   const [twitterUsername, setTwitterUsername] = useState("");
   const [isSubmittingTwitter, setIsSubmittingTwitter] = useState(false);
 
   const handleExternalLink = (url: string) => {
-    sdk.actions.openUrl(url);
+    if (isInMiniApp) {
+      sdk.actions.openUrl(url);
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   const handleSubmitTwitterUsername = async () => {
-    if (!twitterUsername || !user?.fid || !userInfo) return;
+    if (!twitterUsername) return;
 
     setIsSubmittingTwitter(true);
     try {
@@ -117,15 +123,15 @@ export default function TwitterTaskButton({
           </Button> */}
           <Button
             onClick={() => setShowTwitterInput(!showTwitterInput)}
-            className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
+            className="bg-gray-800 hover:bg-gray-900 text-xs h-6 w-6 p-0 rounded-none text-white"
             title="Add manually"
           >
             {showTwitterInput ? <X className="w-3 h-3" /> : <span>+</span>}
           </Button>
           <Button
             onClick={onRefresh}
-            disabled={isRefreshing || !user?.fid}
-            className="bg-gray-600 hover:bg-gray-700 text-xs h-6 w-6 p-0 rounded-none text-white"
+            disabled={isRefreshing || (!user?.fid && !isInMiniApp)}
+            className="bg-gray-800 hover:bg-gray-900 text-xs h-6 w-6 p-0 rounded-none text-white"
             title="Refresh verification"
           >
             {isRefreshing ? (
@@ -146,7 +152,7 @@ export default function TwitterTaskButton({
             onChange={(e) =>
               setTwitterUsername(e.target.value.replace("@", ""))
             }
-            className="bg-gray-700 text-white text-xs rounded-none px-2 py-1 flex-grow max-w-[120px]"
+            className="bg-gray-800 text-white text-xs rounded-none px-2 py-1 flex-grow max-w-[120px]"
           />
           <Button
             onClick={handleSubmitTwitterUsername}

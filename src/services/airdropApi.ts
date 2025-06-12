@@ -13,7 +13,8 @@ export interface UserInfo {
       isRequired: boolean;
       isCompleted: boolean;
       verificationDetails: {
-        checkedUsername: boolean;
+        checkedUsername: string;
+        submittedUsername?: string;
         targetUsername: string;
         targetGroup: string;
       };
@@ -69,7 +70,7 @@ export const airdropApi = {
   },
 
   async verifyTwitterFollow(data: {
-    fid: number;
+    fid: number | string | null;
     twitterUsername: string;
     targetTwitterUsername: string;
     walletAddress: string;
@@ -91,25 +92,42 @@ export const airdropApi = {
   },
 
   async registerSocialTask(
-    platform: "instagram" | "tiktok" | "telegram" | "zora",
+    platform: "instagram" | "tiktok" | "telegram" | "zora" | "farcaster",
     data: {
-      farcasterFid: number;
+      farcasterFid: number | null;
       username: string;
       targetUsername: string;
+      walletAddress: string;
     }
   ) {
+    let targetTelegramGroup = "";
+    if (platform === "telegram") {
+      targetTelegramGroup = data.targetUsername || "";
+    }
+    const body: {
+      id?: string;
+      farcasterFid?: number;
+      [key: string]: string | number | undefined;
+      targetTelegramGroup?: string;
+    } = {
+      [`${platform}Username`]: data.username,
+      [`target${platform.charAt(0).toUpperCase() + platform.slice(1)}Username`]:
+        data.targetUsername,
+      targetTelegramGroup,
+    };
+
+    if (!data.farcasterFid) {
+      body.id = data.walletAddress;
+    } else {
+      body.farcasterFid = data.farcasterFid;
+    }
+
     const response = await fetch(
       `/api/a0x-framework/airdrop/task/${platform}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farcasterFid: data.farcasterFid,
-          [`${platform}Username`]: data.username,
-          [`target${
-            platform.charAt(0).toUpperCase() + platform.slice(1)
-          }Username`]: data.targetUsername,
-        }),
+        body: JSON.stringify(body),
       }
     );
 

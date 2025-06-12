@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     }
 
     const response = await axios.get(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/participant-exists?fid=${farcasterFid}`
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/participant-exists?fid=${farcasterFid}`
     );
 
     if (response.status !== 200) {

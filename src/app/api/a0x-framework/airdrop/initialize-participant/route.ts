@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await axios.post(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/initialize-participant`,
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/initialize-participant`,
       body
     );
 

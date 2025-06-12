@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     };
 
     const response = await axios.post(
-      `${A0X_AGENT_API_URL}/a0x-framework/airdrop/update-balance`,
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/update-balance`,
       payload
     );
 

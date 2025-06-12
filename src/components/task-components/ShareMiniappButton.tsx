@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, ExternalLink } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
-import sdk from "@farcaster/frame-sdk";
 import { UserContext } from "@farcaster/frame-core/dist/context";
+import sdk from "@farcaster/frame-sdk";
+import { CheckCircle2, ExternalLink } from "lucide-react";
 
 interface ShareMiniappButtonProps {
   task: Task;
@@ -41,6 +41,13 @@ export default function ShareMiniappButton({
           verificationError: "Error sharing mini app",
         });
       }
+    } else {
+      const currentPoints =
+        lastPointsRef.current !== null ? lastPointsRef.current : userPoints;
+      window.open(
+        `https://farcaster.xyz/~/compose?text=I'm%20participating%20in%20$moonXBT%20airdrop,%20the%20first%20autonomous%20content%20creator%20on%20Base!%20I've%20earned%20${currentPoints}%20points%20so%20far!`,
+        "_blank"
+      );
     }
   };
 
@@ -56,7 +63,6 @@ export default function ShareMiniappButton({
           <Button
             onClick={handleShare}
             className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-            disabled={!user?.fid}
             title="Share on Farcaster"
           >
             Share <ExternalLink className="w-3 h-3 ml-1" />

@@ -38,7 +38,11 @@ interface LeaderboardEntry {
   };
 }
 
-export default function LeaderboardTab() {
+export default function LeaderboardTab({
+  isInMiniApp,
+}: {
+  isInMiniApp: boolean | null;
+}) {
   const [allLeaderboardData, setAllLeaderboardData] = useState<
     LeaderboardEntry[]
   >([]);
@@ -87,11 +91,15 @@ export default function LeaderboardTab() {
   const endIndex = startIndex + itemsPerPage;
   const currentPageData = allLeaderboardData.slice(startIndex, endIndex);
 
-  const handleProfileClick = async (farcasterFid: number) => {
+  const handleProfileClick = async (farcasterFid: number, username: string) => {
     try {
-      await sdk.actions.viewProfile({
-        fid: farcasterFid,
-      });
+      if (isInMiniApp) {
+        await sdk.actions.viewProfile({
+          fid: farcasterFid,
+        });
+      } else {
+        window.open(`https://warpcast.com/${username}`, "_blank");
+      }
     } catch (err) {
       console.error("Error opening profile:", err);
     }
@@ -161,7 +169,9 @@ export default function LeaderboardTab() {
                   </span>
                   <div
                     className="w-9 h-9 relative cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => handleProfileClick(entry.farcasterFid)}
+                    onClick={() =>
+                      handleProfileClick(entry.farcasterFid, entry.username)
+                    }
                   >
                     <Image
                       src={entry.avatar}
@@ -173,7 +183,9 @@ export default function LeaderboardTab() {
                   <span
                     className="text-blue-100 font-bold text-xs cursor-pointer hover:text-blue-300 transition-colors truncate max-w-[130px]"
                     style={{ fontFamily: "Press Start 2P, monospace" }}
-                    onClick={() => handleProfileClick(entry.farcasterFid)}
+                    onClick={() =>
+                      handleProfileClick(entry.farcasterFid, entry.username)
+                    }
                   >
                     {entry.username}
                   </span>

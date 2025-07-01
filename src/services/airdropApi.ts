@@ -27,6 +27,18 @@ export interface UserInfo {
   points?: number;
 }
 
+export interface FarcasterFollowResponse {
+  fid: number;
+  username: string;
+  displayName: string;
+  isFollowing: boolean;
+  profilePicture: string;
+  walletAddress: string | null;
+  twitterAccount: string | null;
+  targetUsername: string;
+  searchedUsername: string;
+}
+
 export const airdropApi = {
   async verifyFarcasterFollow(
     fid: number,
@@ -39,6 +51,34 @@ export const airdropApi = {
 
     if (!response.ok) {
       throw new Error("Failed to verify Farcaster follow");
+    }
+
+    return response.json();
+  },
+
+  async verifyFarcasterFollowByUsername(
+    username: string,
+    targetUsername: string,
+    walletAddress?: string
+  ): Promise<FarcasterFollowResponse> {
+    const params = new URLSearchParams({
+      username,
+      targetUsername,
+    });
+
+    if (walletAddress) {
+      params.append("walletAddress", walletAddress);
+    }
+
+    const response = await fetch(
+      `/api/verify-follow-by-username?${params.toString()}`
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to verify Farcaster follow by username"
+      );
     }
 
     return response.json();

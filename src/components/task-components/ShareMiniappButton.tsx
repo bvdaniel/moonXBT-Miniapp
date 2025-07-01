@@ -33,11 +33,11 @@ export default function ShareMiniappButton({
         });
 
         if (result?.cast) {
-          onTaskUpdate("share-miniapp", { isCompleted: true });
+          onTaskUpdate("share-social", { isCompleted: true });
         }
       } catch (error) {
         console.error("Error sharing mini app:", error);
-        onTaskUpdate("share-miniapp", {
+        onTaskUpdate("share-social", {
           verificationError: "Error sharing mini app",
         });
       }

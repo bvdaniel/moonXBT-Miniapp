@@ -93,7 +93,7 @@ const parseTextMillion = (amount: number) => {
 
 const MIN_A0X_REQUIRED = 10_000_000;
 
-export const useAirdropTasks = () => {
+export const useAirdropTasks = (isInMiniApp: boolean = true) => {
   const [tasks, dispatch] = useReducer(taskReducer, []);
 
   const initializeTasks = useCallback(() => {
@@ -126,7 +126,7 @@ export const useAirdropTasks = () => {
         },
         {
           id: "follow-farcaster",
-          title: "Follow on Farcaster",
+          title: `Follow on Farcaster${!isInMiniApp ? " (Optional)" : ""}`,
           description: (
             <span>
               Follow{" "}
@@ -140,7 +140,7 @@ export const useAirdropTasks = () => {
             </span>
           ),
           socialNetwork: "farcaster",
-          isRequired: true,
+          isRequired: isInMiniApp,
           isCompleted: false,
           needsAuth: true,
           url: "https://farcaster.xyz/ai420z",
@@ -314,21 +314,44 @@ export const useAirdropTasks = () => {
           targetUsername: "moonxbt",
         },
         {
-          id: "share-miniapp",
-          title: "Share Mini App",
-          description: <span>Share on Farcaster (50pts + 10/referral)</span>,
-          socialNetwork: "farcaster",
-          isRequired: false,
+          id: "share-social",
+          title: isInMiniApp ? "Share Mini App" : "Share on X (Twitter)",
+          description: isInMiniApp ? (
+            <span>Share on Farcaster (50pts + 10/referral)</span>
+          ) : (
+            <span>Share the airdrop on X/Twitter</span>
+          ),
+          socialNetwork: isInMiniApp ? "farcaster" : "twitter",
+          isRequired: !isInMiniApp,
           isCompleted: false,
           needsAuth: false,
-          icon: <MessageCircle className="w-4 h-4 text-purple-500" />,
+          url: isInMiniApp
+            ? undefined
+            : `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                "🚀 Join the @moonXBT_ai airdrop! Complete tasks to earn your share of tokens 🌙✨\n\n#moonXBT #Airdrop #Crypto"
+              )}&url=${encodeURIComponent("https://moonxbt.fun")}`,
+          icon: isInMiniApp ? (
+            <MessageCircle className="w-4 h-4 text-purple-500" />
+          ) : (
+            <div className="bg-black rounded-sm p-0.5 flex items-center justify-center w-4 h-4">
+              <Image
+                src="/x.png"
+                alt="X"
+                width={14}
+                height={14}
+                className="rounded-full"
+              />
+            </div>
+          ),
           verificationError: null,
-          points: 50,
-          pointsDescription: "50 points for sharing + 10 points per referral",
+          points: isInMiniApp ? 50 : 100,
+          pointsDescription: isInMiniApp
+            ? "50 points for sharing + 10 points per referral"
+            : "100 points for sharing the airdrop on X",
         },
       ],
     });
-  }, []);
+  }, [isInMiniApp]);
 
   const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
     dispatch({ type: "UPDATE_TASK", taskId, updates });

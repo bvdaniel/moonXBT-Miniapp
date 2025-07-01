@@ -78,16 +78,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   // Wagmi hooks for balance reading
   const { address, isConnected } = useAccount();
 
-  const {
-    tasks,
-    requiredTasks,
-    optionalTasks,
-    completedRequiredTasks,
-    completedOptionalTasks,
-    initializeTasks,
-    updateTask,
-  } = useAirdropTasks();
-
   // State
   const [balance, setBalance] = useState<string | null>(null);
   const [user, setUser] = useState<UserContext | null>(null);
@@ -100,6 +90,16 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [isInMiniApp, setIsInMiniApp] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const {
+    tasks,
+    requiredTasks,
+    optionalTasks,
+    completedRequiredTasks,
+    completedOptionalTasks,
+    initializeTasks,
+    updateTask,
+  } = useAirdropTasks(isInMiniApp ?? true);
 
   const lastBalanceRef = useRef<string | null>(null);
   const lastPointsRef = useRef<number | null>(null);
@@ -125,15 +125,22 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     const initializeUserWithoutMiniApp = async () => {
       const wallet = wallets[0];
       if (wallet) {
-        await airdropApi.initializeParticipant({
-          fid: 0,
-          username: "",
-          displayName: "",
-          pfpUrl: "",
-          isFollowingFarcaster: false,
-          walletAddress: wallet.address,
-          referredByFid: sharedFid || null,
-        });
+        try {
+          await airdropApi.initializeParticipant({
+            fid: -1, // Use -1 to indicate web user (not Farcaster miniapp)
+            username: `web-user-${wallet.address.slice(0, 8)}`, // Unique username for web users
+            displayName: `Web User ${wallet.address.slice(0, 6)}...`,
+            pfpUrl:
+              "https://api.dicebear.com/7.x/identicon/svg?seed=" +
+              wallet.address, // Generate identicon
+            isFollowingFarcaster: false,
+            walletAddress: wallet.address,
+            referredByFid: sharedFid || null,
+          });
+          console.log("Web user initialized successfully");
+        } catch (error) {
+          console.error("Error initializing web user:", error);
+        }
       }
     };
     if (!isInMiniApp && ready && authenticated && wallets.length > 0) {
@@ -189,7 +196,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   useEffect(() => {
     setIsClient(true);
     sdk.actions.ready();
-    initializeTasks();
 
     // Detect if running in miniapp
     const detectMiniApp = async () => {
@@ -204,7 +210,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     };
 
     detectMiniApp();
-  }, [initializeTasks]);
+  }, []);
+
+  // Re-initialize tasks when miniapp status changes
+  useEffect(() => {
+    if (isInMiniApp !== null) {
+      initializeTasks();
+    }
+  }, [isInMiniApp, initializeTasks]);
 
   // Handle wallet timeout
   useEffect(() => {
@@ -310,7 +323,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         "follow-tiktok",
         "join-telegram",
         "follow-zora",
-        "share-miniapp",
+        "share-social",
       ];
 
       socialTasks.forEach((taskId) => {
@@ -327,7 +340,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             data.tasks[taskId].completed &&
             !tasks.find((t) => t.id === taskId)?.isCompleted
           ) {
-            const points = taskId === "share-miniapp" ? 50 : 100;
+            const points = taskId === "share-social" ? 50 : 100;
             setUserPoints((prev) => prev + points);
           }
         }
@@ -433,19 +446,51 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       );
     }
 
-    if (task.id === "share-miniapp") {
-      return (
-        <ShareMiniappButton
-          task={task}
-          user={user}
-          userPoints={userPoints}
-          lastPointsRef={lastPointsRef}
-          onTaskUpdate={updateTask}
-        />
-      );
+    if (task.id === "share-social") {
+      // In miniapp: use ShareMiniappButton for Farcaster sharing
+      if (isInMiniApp) {
+        return (
+          <ShareMiniappButton
+            task={task}
+            user={user}
+            userPoints={userPoints}
+            lastPointsRef={lastPointsRef}
+            onTaskUpdate={updateTask}
+          />
+        );
+      } else {
+        // In web browser: simple share button for X/Twitter
+        return (
+          <div className="flex flex-col items-end space-y-1">
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => {
+                  if (task.url) {
+                    window.open(task.url, "_blank");
+                    // Mark as completed when clicked
+                    updateTask(task.id, { isCompleted: true });
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-sm p-0 px-1 h-6 text-white rounded-none"
+              >
+                Share
+              </Button>
+              {task.isCompleted && (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              )}
+            </div>
+            {task.verificationError && (
+              <span className="text-xs text-red-400">
+                {task.verificationError}
+              </span>
+            )}
+          </div>
+        );
+      }
     }
 
     if (task.id === "follow-farcaster") {
+      // Always use FarcasterTaskButton, but with different behavior for web vs miniapp
       return (
         <FarcasterTaskButton
           task={task}
@@ -457,12 +502,37 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             if (isInMiniApp) {
               await handleRefreshVerification();
             } else {
-              await airdropApi.registerSocialTask("farcaster", {
-                farcasterFid: null,
-                username: username,
-                targetUsername: task.targetUsername || "",
-                walletAddress: addressLowerCase || "",
-              });
+              // For web users: verify by username
+              try {
+                const data = await airdropApi.verifyFarcasterFollowByUsername(
+                  username,
+                  task.targetUsername || "",
+                  addressLowerCase || undefined
+                );
+
+                updateTask(task.id, {
+                  isCompleted: data.isFollowing === true,
+                  verificationError:
+                    data.isFollowing === true
+                      ? null
+                      : "You're not following this account yet.",
+                });
+
+                if (data.isFollowing === true) {
+                  setUserPoints((prev) => prev + 100);
+                }
+              } catch (error) {
+                console.error(
+                  "Error verifying Farcaster follow by username:",
+                  error
+                );
+                updateTask(task.id, {
+                  verificationError:
+                    error instanceof Error
+                      ? error.message
+                      : "Error verifying follow status.",
+                });
+              }
             }
           }}
         />
@@ -470,29 +540,60 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
 
     if (task.id === "follow-twitter") {
-      return (
-        <TwitterTaskButton
-          task={task}
-          user={user}
-          userInfo={userInfo}
-          isVerifyingTwitter={false}
-          isVerifyingFarcaster={false}
-          isVerifyingAll={false}
-          isRefreshing={false}
-          onTaskUpdate={updateTask}
-          onTwitterSubmit={async () => {
-            if (task.targetUsername && userInfo?.walletAddress) {
-              await verifyTwitterFollow(
-                user?.fid || addressLowerCase || "",
-                userInfo.twitterAccount || "",
-                userInfo.walletAddress
-              );
-            }
-          }}
-          onRefresh={handleRefreshVerification}
-          isInMiniApp={isInMiniApp}
-        />
-      );
+      // In web browser: simple external link (can't verify without real FID)
+      if (!isInMiniApp) {
+        return (
+          <div className="flex flex-col items-end space-y-1">
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => {
+                  if (task.url) {
+                    window.open(task.url, "_blank");
+                    // For web users, we trust they completed it
+                    updateTask(task.id, { isCompleted: true });
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-sm p-0 px-1 h-6 text-white rounded-none"
+              >
+                Follow
+              </Button>
+              {task.isCompleted && (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              )}
+            </div>
+            {task.verificationError && (
+              <span className="text-xs text-red-400">
+                {task.verificationError}
+              </span>
+            )}
+          </div>
+        );
+      } else {
+        // In miniapp: use full verification
+        return (
+          <TwitterTaskButton
+            task={task}
+            user={user}
+            userInfo={userInfo}
+            isVerifyingTwitter={false}
+            isVerifyingFarcaster={false}
+            isVerifyingAll={false}
+            isRefreshing={false}
+            onTaskUpdate={updateTask}
+            onTwitterSubmit={async () => {
+              if (task.targetUsername && userInfo?.walletAddress) {
+                await verifyTwitterFollow(
+                  user?.fid || addressLowerCase || "",
+                  userInfo.twitterAccount || "",
+                  userInfo.walletAddress
+                );
+              }
+            }}
+            onRefresh={handleRefreshVerification}
+            isInMiniApp={isInMiniApp}
+          />
+        );
+      }
     }
 
     if (

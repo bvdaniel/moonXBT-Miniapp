@@ -120,16 +120,69 @@ export async function GET(request: NextRequest) {
 
     console.log("user", user);
 
+    const isFollowing = user.viewer_context.followed_by;
+    const userWalletAddress =
+      user.verified_addresses.primary.eth_address ||
+      user.verified_addresses.eth_addresses[0];
+
+    // Register/update user in A0X backend
+    // If we reach this point, it means either:
+    // 1. A0X didn't have user data (safe to register)
+    // 2. refresh=true was passed (forced update)
+    try {
+      if (A0X_AGENT_API_URL && userWalletAddress) {
+        console.log("Registering/updating miniapp user in A0X backend...");
+
+        const a0xData = {
+          fid: user.fid,
+          username: user.username,
+          displayName: user.display_name,
+          pfpUrl: user.pfp_url,
+          isFollowingFarcaster: isFollowing,
+          walletAddress: userWalletAddress,
+          referredByFid: null,
+        };
+
+        const a0xResponse = await fetch(
+          `${A0X_AGENT_API_URL}/moonxbt/airdrop/initialize-participant`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(a0xData),
+          }
+        );
+
+        if (a0xResponse.ok) {
+          console.log(
+            "Successfully registered/updated miniapp user in A0X backend"
+          );
+        } else {
+          console.warn(
+            "Failed to register/update user in A0X backend:",
+            await a0xResponse.text()
+          );
+        }
+      } else {
+        console.log(
+          "Skipping A0X registration - missing URL or wallet address"
+        );
+      }
+    } catch (a0xError) {
+      console.error(
+        "Error registering/updating user in A0X backend:",
+        a0xError
+      );
+      // Don't fail the main request if A0X call fails
+    }
+
     // Return consolidated user data
     return NextResponse.json({
       fid: user.fid,
       username: user.username,
       displayName: user.display_name,
-      isFollowing: user.viewer_context.followed_by,
+      isFollowing,
       profilePicture: user.pfp_url,
-      walletAddress:
-        user.verified_addresses.primary.eth_address ||
-        user.verified_addresses.eth_addresses[0],
+      walletAddress: userWalletAddress,
       twitterAccount: twitterAccount?.username,
       targetUsername,
     });

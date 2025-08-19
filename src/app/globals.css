@@ -57,7 +57,7 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
-  font-family: 'Inter', Helvetica, Arial, sans-serif;
+  font-family: "Inter", Helvetica, Arial, sans-serif;
 }
 
 * {
@@ -73,4 +73,63 @@ body {
   :root {
     --radius: 0.5rem;
   }
+}
+
+/* Extracted from styled-jsx in AirdropClient */
+.terminal-border {
+  border: 2px solid #fff;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px #1752f0, 0 0 8px #fff2;
+}
+
+.scanline {
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.04) 0px,
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+.bios-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background: #fff;
+  animation: blink 1s steps(1) infinite;
+  vertical-align: bottom;
+}
+
+@keyframes blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes bob {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(8deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.animate-bob {
+  animation: bob 2.8s ease-in-out infinite;
+}
+
+.neon-moon {
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 2px #fff, 0 0 24px 4px #fff8, 0 0 40px 8px #fff4;
 }

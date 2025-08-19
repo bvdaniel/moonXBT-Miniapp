@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { renderWithProviders } from "./utils/renderWithProviders";
 import { airdropApi } from "@/services/airdropApi";
 // NOTE: We will dynamically import AirdropClient AFTER mocks are defined to avoid hoisting issues
 let AirdropClient: any;
@@ -85,11 +86,11 @@ describe("AirdropClient preflight integration", () => {
     AirdropClient = (mod as any).default;
     const apiMod = await import("@/services/airdropApi");
     const api = (apiMod as any).airdropApi;
-    render(<AirdropClient sharedFid={null} />);
+    renderWithProviders(<AirdropClient sharedFid={null} />);
     const claim = await screen.findByRole("button", { name: /claim airdrop/i });
     fireEvent.click(claim);
     // Assert spinner text shows (indicates handleClaimAirdrop kicked off)
-    await screen.findByText(/checking requirements/i, { timeout: 5000 });
+    await screen.findByText(/checking requirements/i);
 
     await waitFor(
       () => {

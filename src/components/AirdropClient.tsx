@@ -20,7 +20,11 @@ import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
 import { useAirdropTasks, type Task } from "@/hooks/useAirdropTasks";
-import { getRequiredTaskIdsForEnv, MIN_A0X_REQUIRED } from "@/constants/tasks";
+import {
+  getRequiredTaskIdsForEnv,
+  MIN_A0X_REQUIRED,
+  TaskId,
+} from "@/constants/tasks";
 import { computeMissingRequired } from "@/lib/airdrop";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 
@@ -124,7 +128,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       | undefined
   ) => {
     localTasks.forEach((t) => {
-      if (t.id === "hold-a0x") return;
+      if (t.id === TaskId.HoldA0X) return;
       const backendCompleted = snapshotTasks?.[t.id]?.completed === true;
       if (backendCompleted !== t.isCompleted) {
         updateTask(t.id, {
@@ -301,7 +305,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     fid: number,
     isRefresh: boolean = false
   ) => {
-    const farcasterTask = tasks.find((task) => task.id === "follow-farcaster");
+    const farcasterTask = tasks.find(
+      (task) => task.id === TaskId.FollowFarcaster
+    );
     if (!farcasterTask || !farcasterTask.targetUsername) return;
 
     try {
@@ -333,7 +339,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
 
       // Update Farcaster task
-      updateTask("follow-farcaster", {
+      updateTask(TaskId.FollowFarcaster, {
         isCompleted: data.isFollowing === true,
         verificationError:
           data.isFollowing === true
@@ -342,10 +348,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       });
 
       // Update Twitter task if data available
-      if (data.twitterAccount && data.tasks?.["follow-twitter"]) {
-        updateTask("follow-twitter", {
-          isCompleted: data.tasks["follow-twitter"].completed === true,
-          verificationError: data.tasks["follow-twitter"].completed
+      if (data.twitterAccount && data.tasks?.[TaskId.FollowTwitter]) {
+        updateTask(TaskId.FollowTwitter, {
+          isCompleted: data.tasks[TaskId.FollowTwitter].completed === true,
+          verificationError: data.tasks[TaskId.FollowTwitter].completed
             ? null
             : "You're not following this account yet.",
         });
@@ -353,11 +359,11 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
       // Update social media tasks
       const socialTasks = [
-        "follow-instagram",
-        "follow-tiktok",
-        "join-telegram",
-        "follow-zora",
-        "share-social",
+        TaskId.FollowInstagram,
+        TaskId.FollowTikTok,
+        TaskId.JoinTelegram,
+        TaskId.FollowZora,
+        TaskId.ShareSocial,
       ];
 
       socialTasks.forEach((taskId) => {
@@ -374,7 +380,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             data.tasks[taskId].completed &&
             !tasks.find((t) => t.id === taskId)?.isCompleted
           ) {
-            const points = taskId === "share-social" ? 50 : 100;
+            const points = taskId === TaskId.ShareSocial ? 50 : 100;
             setUserPoints((prev) => prev + points);
           }
         }
@@ -384,13 +390,13 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       if (
         data.twitterAccount &&
         user?.fid &&
-        (!data.tasks || data.tasks["follow-twitter"]?.completed !== true)
+        (!data.tasks || data.tasks[TaskId.FollowTwitter]?.completed !== true)
       ) {
         verifyTwitterFollow(user.fid, data.twitterAccount, data.walletAddress);
       }
     } catch (error) {
       console.error("Error verifying Farcaster follow:", error);
-      updateTask("follow-farcaster", {
+      updateTask(TaskId.FollowFarcaster, {
         verificationError: "Network error verifying follow status.",
       });
     }
@@ -402,7 +408,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     twitterUsername: string,
     walletAddress: string
   ) => {
-    const twitterTask = tasks.find((task) => task.id === "follow-twitter");
+    const twitterTask = tasks.find((task) => task.id === TaskId.FollowTwitter);
     if (!twitterTask?.targetUsername) return;
 
     try {
@@ -413,7 +419,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         walletAddress,
       });
 
-      updateTask("follow-twitter", {
+      updateTask(TaskId.FollowTwitter, {
         isCompleted: twitterData.dataReceived.isFollowing === true,
         verificationError:
           twitterData.dataReceived.isFollowing === true
@@ -430,7 +436,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
     } catch (error) {
       console.error("Error verifying Twitter follow:", error);
-      updateTask("follow-twitter", {
+      updateTask(TaskId.FollowTwitter, {
         verificationError: "Error verifying Twitter follow status.",
       });
     }
@@ -456,7 +462,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       const points = calculateA0XPoints(balanceInEther);
       lastPointsRef.current = points;
 
-      updateTask("hold-a0x", {
+      updateTask(TaskId.HoldA0X, {
         isCompleted: balanceInEther >= MIN_A0X_REQUIRED,
         verificationError: null,
         points,
@@ -480,7 +486,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       );
     }
 
-    if (task.id === "share-social") {
+    if (task.id === TaskId.ShareSocial) {
       // In miniapp: use ShareMiniappButton for Farcaster sharing
       if (isInMiniApp) {
         return (
@@ -523,7 +529,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
     }
 
-    if (task.id === "follow-farcaster") {
+    if (task.id === TaskId.FollowFarcaster) {
       // Always use FarcasterTaskButton, but with different behavior for web vs miniapp
       return (
         <FarcasterTaskButton
@@ -573,7 +579,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       );
     }
 
-    if (task.id === "follow-twitter") {
+    if (task.id === TaskId.FollowTwitter) {
       // In web browser: simple external link (can't verify without real FID)
       if (!isInMiniApp) {
         return (

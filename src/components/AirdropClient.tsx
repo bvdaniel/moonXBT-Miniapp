@@ -90,6 +90,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [isInMiniApp, setIsInMiniApp] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
+  const [missingTasks, setMissingTasks] = useState<string[]>([]);
+  const [isPreflighting, setIsPreflighting] = useState(false);
 
   const {
     tasks,
@@ -790,20 +792,70 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const allRequiredCompleted =
     isClient && isConnected && completedRequiredTasks === requiredTasks.length;
 
-  const handleClaimAirdrop = async () => {
-    if (!allRequiredCompleted) {
-      setClaimMessage("Please complete all required tasks first.");
-      return;
-    }
-    setIsClaiming(true);
-    setClaimMessage(null);
+  const getRequiredTaskIds = useCallback((): string[] => {
+    return isInMiniApp
+      ? ["hold-a0x", "follow-farcaster"]
+      : ["hold-a0x", "follow-twitter", "share-social"];
+  }, [isInMiniApp]);
 
-    // Placeholder for airdrop claim logic
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setClaimMessage(
-      "Airdrop claim initiated! (This is a demo, no actual claim processed)"
-    );
-    setIsClaiming(false);
+  const handleClaimAirdrop = async () => {
+    setClaimMessage(null);
+    setMissingTasks([]);
+    setIsPreflighting(true);
+    try {
+      if (isInMiniApp && user?.fid) {
+        await verifyFarcasterFollow(user.fid, true);
+      }
+
+      const fidToUse: number | string = user?.fid ?? -1;
+      const snapshot = await airdropApi.getParticipantSnapshot({
+        fid: fidToUse,
+      });
+
+      // Reconcile local optimistic tasks (except hold-a0x which is governed by on-chain balance)
+      tasks.forEach((t) => {
+        if (t.id === "hold-a0x") return;
+        const backendCompleted = snapshot.tasks?.[t.id]?.completed === true;
+        if (backendCompleted !== t.isCompleted) {
+          updateTask(t.id, {
+            isCompleted: backendCompleted,
+            verificationError: null,
+          });
+        }
+      });
+
+      const requiredIds = getRequiredTaskIds();
+      const missing: string[] = [];
+      requiredIds.forEach((id) => {
+        if (id === "hold-a0x") {
+          const hasRequired =
+            balance !== null && Number(balance) >= MIN_A0X_REQUIRED;
+          if (!hasRequired) missing.push(id);
+        } else {
+          const completed = snapshot.tasks?.[id]?.completed === true;
+          if (!completed) missing.push(id);
+        }
+      });
+
+      if (missing.length > 0) {
+        setMissingTasks(missing);
+        setClaimMessage("Please complete the required tasks below.");
+        return;
+      }
+
+      setIsClaiming(true);
+      // Placeholder for airdrop claim logic
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setClaimMessage(
+        "Airdrop claim initiated! (This is a demo, no actual claim processed)"
+      );
+      setIsClaiming(false);
+    } catch (error) {
+      console.error("Error during claim preflight:", error);
+      setClaimMessage("Error preparing claim. Please try again.");
+    } finally {
+      setIsPreflighting(false);
+    }
   };
 
   return (
@@ -847,7 +899,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 Your $A0X Balance
               </span>
               <span className="text-white font-extrabold text-2xl sm:text-3xl bg-gradient-to-r from-blue-200 via-white to-blue-100 bg-clip-text text-transparent">
-                {Number(balance).toLocaleString()} <span className="text-blue-200 text-lg">A0X</span>
+                {Number(balance).toLocaleString()}{" "}
+                <span className="text-blue-200 text-lg">A0X</span>
               </span>
               <div className="w-1/2 h-px bg-blue-100/30 mt-2" />
             </div>
@@ -1094,13 +1147,15 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 <div className="w-full flex flex-col items-center mt-1">
                   <Button
                     onClick={handleClaimAirdrop}
-                    disabled={true}
+                    disabled={isPreflighting || isClaiming}
                     className="w-full bg-green-600 hover:bg-green-700 mt-2"
                   >
-                    {isClaiming ? (
+                    {isClaiming || isPreflighting ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        Claiming...
+                        {isPreflighting
+                          ? "Checking requirements..."
+                          : "Claiming..."}
                       </>
                     ) : (
                       "Claim Airdrop"
@@ -1117,6 +1172,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                     >
                       {claimMessage}
                     </div>
+                  )}
+                  {missingTasks.length > 0 && (
+                    <ul className="mt-2 text-xs text-blue-100 list-disc list-inside">
+                      {missingTasks.map((id) => {
+                        const t = tasks.find((x) => x.id === id);
+                        return <li key={id}>{t?.title || id}</li>;
+                      })}
+                    </ul>
                   )}
                 </div>
               </div>

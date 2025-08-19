@@ -1,4 +1,5 @@
-import React, { useReducer, useCallback } from "react";
+import * as React from "react";
+import { useReducer, useCallback } from "react";
 import { Circle, MessageCircle, Play, Send } from "lucide-react";
 import Image from "next/image";
 import { FaInstagram, FaTelegram, FaTiktok } from "react-icons/fa";
@@ -394,3 +395,12 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
     resetAllTasks,
   };
 };
+
+// Resolve required task ids based on environment (miniapp vs web)
+export function getRequiredTaskIdsForEnv(
+  isInMiniApp: boolean | null | undefined
+): string[] {
+  return isInMiniApp
+    ? ["hold-a0x", "follow-farcaster"]
+    : ["hold-a0x", "follow-twitter", "share-social"];
+}

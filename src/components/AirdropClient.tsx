@@ -18,7 +18,11 @@ import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
-import { useAirdropTasks, type Task } from "@/hooks/useAirdropTasks";
+import {
+  useAirdropTasks,
+  type Task,
+  getRequiredTaskIdsForEnv,
+} from "@/hooks/useAirdropTasks";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 
 // Components
@@ -792,11 +796,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const allRequiredCompleted =
     isClient && isConnected && completedRequiredTasks === requiredTasks.length;
 
-  const getRequiredTaskIds = useCallback((): string[] => {
-    return isInMiniApp
-      ? ["hold-a0x", "follow-farcaster"]
-      : ["hold-a0x", "follow-twitter", "share-social"];
-  }, [isInMiniApp]);
+  const getRequiredTaskIds = useCallback(
+    (): string[] => getRequiredTaskIdsForEnv(isInMiniApp),
+    [isInMiniApp]
+  );
 
   const handleClaimAirdrop = async () => {
     setClaimMessage(null);

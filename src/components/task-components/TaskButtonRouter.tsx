@@ -1,0 +1,269 @@
+import { Button } from "@/components/ui/Button";
+import { CheckCircle2 } from "lucide-react";
+import sdk from "@farcaster/frame-sdk";
+import A0XTaskButton from "@/components/task-components/A0XTaskButton";
+import ShareMiniappButton from "@/components/task-components/ShareMiniappButton";
+import FarcasterTaskButton from "@/components/task-components/FarcasterTaskButton";
+import TwitterTaskButton from "@/components/task-components/TwitterTaskButton";
+import SocialTaskButton from "@/components/task-components/SocialTaskButton";
+import { Task } from "@/hooks/useAirdropTasks";
+import { airdropApi, type UserInfo } from "@/services/airdropApi";
+import { TaskId } from "@/constants/tasks";
+
+interface TaskButtonRouterProps {
+  task: Task;
+  isInMiniApp: boolean | null;
+  user: { fid?: number } | null;
+  userInfo: UserInfo | null;
+  addressLowerCase: string;
+  balance: string | null;
+  isLoadingTokenBalance: boolean;
+  hasAnyWallet: boolean;
+  userFid?: number;
+  address?: string;
+  lastPointsRef: React.MutableRefObject<number | null>;
+  userPoints: number;
+  updateTask: (taskId: string, updates: Partial<Task>) => void;
+  verifyTwitterFollow: (
+    fid: number | string | null,
+    twitterUsername: string,
+    walletAddress: string
+  ) => Promise<void>;
+  handleRefreshVerification: () => Promise<void>;
+  setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>;
+}
+
+export default function TaskButtonRouter({
+  task,
+  isInMiniApp,
+  user,
+  userInfo,
+  addressLowerCase,
+  balance,
+  isLoadingTokenBalance,
+  hasAnyWallet,
+  userFid,
+  address,
+  lastPointsRef,
+  userPoints,
+  updateTask,
+  verifyTwitterFollow,
+  handleRefreshVerification,
+  setUserInfo,
+}: TaskButtonRouterProps) {
+  if (task.socialNetwork === "a0x") {
+    return (
+      <A0XTaskButton
+        task={task}
+        balance={balance}
+        isLoadingTokenBalance={isLoadingTokenBalance}
+        isConnected={hasAnyWallet}
+        userFid={userFid}
+        address={address}
+        isInMiniApp={isInMiniApp}
+      />
+    );
+  }
+
+  if (task.id === TaskId.ShareSocial) {
+    if (isInMiniApp) {
+      return (
+        <ShareMiniappButton
+          task={task}
+          user={user as any}
+          userPoints={userPoints}
+          lastPointsRef={lastPointsRef}
+          onTaskUpdate={updateTask}
+        />
+      );
+    }
+    return (
+      <div className="flex flex-col items-end space-y-1">
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={() => {
+              if (task.url) {
+                window.open(task.url, "_blank");
+                updateTask(task.id, { isCompleted: true });
+              }
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-sm p-0 px-1 h-6 text-white rounded-none"
+          >
+            Share
+          </Button>
+          {task.isCompleted && (
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+          )}
+        </div>
+        {task.verificationError && (
+          <span className="text-xs text-red-400">{task.verificationError}</span>
+        )}
+      </div>
+    );
+  }
+
+  if (task.id === TaskId.FollowFarcaster) {
+    return (
+      <FarcasterTaskButton
+        task={task}
+        user={user}
+        isVerifyingFarcaster={false}
+        isRefreshing={false}
+        onTaskUpdate={updateTask}
+        onVerifyFollow={async (username) => {
+          if (isInMiniApp) {
+            await handleRefreshVerification();
+          } else {
+            try {
+              const data = await airdropApi.verifyFarcasterFollowByUsername(
+                username,
+                task.targetUsername || "",
+                addressLowerCase || undefined
+              );
+              updateTask(task.id, {
+                isCompleted: data.isFollowing === true,
+                verificationError:
+                  data.isFollowing === true
+                    ? null
+                    : "You're not following this account yet.",
+              });
+            } catch (error) {
+              updateTask(task.id, {
+                verificationError:
+                  error instanceof Error
+                    ? error.message
+                    : "Error verifying follow status.",
+              });
+            }
+          }
+        }}
+        isInMiniApp={isInMiniApp}
+      />
+    );
+  }
+
+  if (task.id === TaskId.FollowTwitter) {
+    if (!isInMiniApp) {
+      return (
+        <div className="flex flex-col items-end space-y-1">
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => {
+                if (task.url) {
+                  window.open(task.url, "_blank");
+                  updateTask(task.id, { isCompleted: true });
+                }
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-sm p-0 px-1 h-6 text-white rounded-none"
+            >
+              Follow
+            </Button>
+            {task.isCompleted && (
+              <CheckCircle2 className="w-4 h-4 text-green-500" />
+            )}
+          </div>
+          {task.verificationError && (
+            <span className="text-xs text-red-400">
+              {task.verificationError}
+            </span>
+          )}
+        </div>
+      );
+    }
+    return (
+      <TwitterTaskButton
+        task={task}
+        user={user}
+        userInfo={userInfo}
+        isVerifyingTwitter={false}
+        isVerifyingFarcaster={false}
+        isVerifyingAll={false}
+        isRefreshing={false}
+        onTaskUpdate={updateTask}
+        onTwitterSubmit={async () => {
+          if (task.targetUsername && userInfo?.walletAddress) {
+            await verifyTwitterFollow(
+              user?.fid || addressLowerCase || "",
+              userInfo.twitterAccount || "",
+              userInfo.walletAddress
+            );
+          }
+        }}
+        onRefresh={handleRefreshVerification}
+        isInMiniApp={isInMiniApp}
+      />
+    );
+  }
+
+  if (
+    task.id === TaskId.FollowTikTok ||
+    task.id === TaskId.FollowInstagram ||
+    task.id === TaskId.JoinTelegram ||
+    task.id === TaskId.FollowZora
+  ) {
+    return (
+      <SocialTaskButton
+        task={task}
+        user={user}
+        userInfo={userInfo}
+        onTaskUpdate={updateTask}
+        onUsernameSubmit={async (platform, username) => {
+          const resp = await airdropApi.registerSocialTask(platform as any, {
+            farcasterFid: user?.fid || null,
+            username,
+            targetUsername: task.targetUsername || "",
+            walletAddress: addressLowerCase || "",
+          });
+          if (resp.dataReceived?.success === true) {
+            setUserInfo((prev) => {
+              if (!prev) return prev;
+              const prevTask = prev.tasks?.[task.id] || ({} as any);
+              if (platform === "telegram") {
+                return {
+                  ...prev,
+                  tasks: {
+                    ...prev.tasks,
+                    [task.id]: { ...prevTask, telegramUsername: username },
+                  },
+                } as any;
+              }
+              return {
+                ...prev,
+                tasks: {
+                  ...prev.tasks,
+                  [task.id]: {
+                    ...prevTask,
+                    verificationDetails: {
+                      ...(prevTask.verificationDetails || {}),
+                      checkedUsername: username,
+                    },
+                  },
+                },
+              } as any;
+            });
+          }
+        }}
+        isInMiniApp={isInMiniApp}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-end space-y-1">
+      <div className="flex items-center space-x-2">
+        <Button
+          onClick={() => task.url && sdk.actions.openUrl(task.url)}
+          className="bg-gray-600 hover:bg-gray-700 text-sm p-0 px-1 h-6 text-white rounded-none"
+        >
+          Open
+        </Button>
+        {task.isCompleted && (
+          <CheckCircle2 className="w-4 h-4 text-green-500" />
+        )}
+      </div>
+      {task.verificationError && (
+        <span className="text-xs text-red-400">{task.verificationError}</span>
+      )}
+    </div>
+  );
+}

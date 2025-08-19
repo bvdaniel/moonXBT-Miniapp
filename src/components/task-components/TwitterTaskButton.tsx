@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
+import { TaskId } from "@/constants/tasks";
 import { UserInfo } from "@/services/airdropApi";
 import sdk from "@farcaster/frame-sdk";
 
@@ -59,7 +60,7 @@ export default function TwitterTaskButton({
       setShowTwitterInput(false);
     } catch (error) {
       console.error("Error verifying Twitter follow:", error);
-      onTaskUpdate("follow-twitter", {
+      onTaskUpdate(TaskId.FollowTwitter, {
         verificationError: "Network error during verification.",
       });
     } finally {

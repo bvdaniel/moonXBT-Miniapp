@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { Task } from "@/hooks/useAirdropTasks";
+import { TaskId } from "@/constants/tasks";
 import { UserContext } from "@farcaster/frame-core/dist/context";
 import sdk from "@farcaster/frame-sdk";
 import { CheckCircle2, ExternalLink } from "lucide-react";
@@ -33,11 +34,11 @@ export default function ShareMiniappButton({
         });
 
         if (result?.cast) {
-          onTaskUpdate("share-social", { isCompleted: true });
+          onTaskUpdate(TaskId.ShareSocial, { isCompleted: true });
         }
       } catch (error) {
         console.error("Error sharing mini app:", error);
-        onTaskUpdate("share-social", {
+        onTaskUpdate(TaskId.ShareSocial, {
           verificationError: "Error sharing mini app",
         });
       }

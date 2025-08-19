@@ -4,6 +4,7 @@ import { Circle, MessageCircle, Play, Send } from "lucide-react";
 import Image from "next/image";
 import { FaInstagram, FaTelegram, FaTiktok } from "react-icons/fa";
 import Link from "next/link";
+import { TaskId, MIN_A0X_REQUIRED } from "@/constants/tasks";
 
 export interface Task {
   id: string;
@@ -62,9 +63,9 @@ const taskReducer = (state: Task[], action: TaskAction): Task[] => {
               ...task,
               isCompleted: false,
               verificationError: null,
-              points: task.id === "hold-a0x" ? 10 : task.points,
+              points: task.id === TaskId.HoldA0X ? 10 : task.points,
               pointsDescription:
-                task.id === "hold-a0x"
+                task.id === TaskId.HoldA0X
                   ? "10 points for holding 10M A0X, +1 point per 1M A0X"
                   : task.pointsDescription,
             }
@@ -76,9 +77,9 @@ const taskReducer = (state: Task[], action: TaskAction): Task[] => {
         ...task,
         isCompleted: false,
         verificationError: null,
-        points: task.id === "hold-a0x" ? 10 : task.points,
+        points: task.id === TaskId.HoldA0X ? 10 : task.points,
         pointsDescription:
-          task.id === "hold-a0x"
+          task.id === TaskId.HoldA0X
             ? "10 points for holding 10M A0X, +1 point per 1M A0X"
             : task.pointsDescription,
       }));
@@ -92,7 +93,7 @@ const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
 };
 
-const MIN_A0X_REQUIRED = 10_000_000;
+// MIN_A0X_REQUIRED imported from constants
 
 export const useAirdropTasks = (isInMiniApp: boolean = true) => {
   const [tasks, dispatch] = useReducer(taskReducer, []);
@@ -102,7 +103,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
       type: "INITIALIZE_TASKS",
       tasks: [
         {
-          id: "hold-a0x",
+          id: TaskId.HoldA0X,
           title: "Hold A0X Tokens",
           description: `Hold at least ${parseTextMillion(
             MIN_A0X_REQUIRED
@@ -126,7 +127,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
             "10 points for holding 10M A0X, +1 point per 1M A0X",
         },
         {
-          id: "follow-farcaster",
+          id: TaskId.FollowFarcaster,
           title: `Follow on Farcaster${!isInMiniApp ? " (Optional)" : ""}`,
           description: (
             <span>
@@ -159,7 +160,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           points: 100,
         },
         {
-          id: "follow-twitter",
+          id: TaskId.FollowTwitter,
           title: "Follow on X",
           description: (
             <span>
@@ -194,7 +195,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           points: 100,
         },
         {
-          id: "follow-tiktok",
+          id: TaskId.FollowTikTok,
           title: "Follow on TikTok (Optional)",
           description: (
             <span>
@@ -223,7 +224,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           points: 100,
         },
         {
-          id: "follow-instagram",
+          id: TaskId.FollowInstagram,
           title: "Follow on Instagram (Optional)",
           description: (
             <span>
@@ -252,7 +253,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           points: 100,
         },
         {
-          id: "join-telegram",
+          id: TaskId.JoinTelegram,
           title: "Join Telegram (Optional)",
           description: (
             <span>
@@ -282,7 +283,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           points: 100,
         },
         {
-          id: "follow-zora",
+          id: TaskId.FollowZora,
           title: "Follow on Zora",
           description: (
             <span>
@@ -315,7 +316,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           targetUsername: "moonxbt",
         },
         {
-          id: "share-social",
+          id: TaskId.ShareSocial,
           title: isInMiniApp ? "Share Mini App" : "Share on X (Twitter)",
           description: isInMiniApp ? (
             <span>Share on Farcaster (50pts + 10/referral)</span>
@@ -401,6 +402,6 @@ export function getRequiredTaskIdsForEnv(
   isInMiniApp: boolean | null | undefined
 ): string[] {
   return isInMiniApp
-    ? ["hold-a0x", "follow-farcaster"]
-    : ["hold-a0x", "follow-twitter", "share-social"];
+    ? [TaskId.HoldA0X, TaskId.FollowFarcaster]
+    : [TaskId.HoldA0X, TaskId.FollowTwitter, TaskId.ShareSocial];
 }

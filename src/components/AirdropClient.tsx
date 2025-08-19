@@ -12,6 +12,7 @@ import BackgroundLayer from "@/components/BackgroundLayer";
 import HeaderSection from "@/components/HeaderSection";
 import BalanceCard from "@/components/BalanceCard";
 import Tabs from "@/components/Tabs";
+import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
 import WalletSection from "@/components/WalletSection";
 import { useInitializeParticipant } from "@/hooks/useInitializeParticipant";
 import { useTwitterVerification } from "@/hooks/useTwitterVerification";
@@ -494,43 +495,49 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         <div className="w-full max-w-xs sm:max-w-sm space-y-4">
           <BalanceCard isConnected={isConnected} balance={balance} />
           <Tabs active={activeTab} onChange={setActiveTab} />
-          {!isInMiniApp && (
-            <WalletSection
-              shown={!isInMiniApp}
-              ready={ready}
-              authenticated={authenticated}
-              wallets={wallets}
-              disableLogin={disableLogin}
-              onLogin={handleLogin}
-              onSignout={handleSignout}
-            />
-          )}
+          {activeTab === "tasks" ? (
+            <>
+              {!isInMiniApp && (
+                <WalletSection
+                  shown={!isInMiniApp}
+                  ready={ready}
+                  authenticated={authenticated}
+                  wallets={wallets}
+                  disableLogin={disableLogin}
+                  onLogin={handleLogin}
+                  onSignout={handleSignout}
+                />
+              )}
 
-          <TaskList
-            title="REQUIRED TASKS"
-            tasks={requiredTasks}
-            renderTaskButton={renderTaskButton}
-          />
-          <TaskList
-            title="BONUS TASKS"
-            tasks={optionalTasks}
-            renderTaskButton={renderTaskButton}
-          />
-          <ProgressPanel
-            completedRequiredTasks={completedRequiredTasks}
-            requiredTotal={requiredTasks.length}
-            completedOptionalTasks={completedOptionalTasks}
-            optionalTotal={optionalTasks.length}
-          />
-          <ClaimSection
-            isClaiming={isClaiming}
-            isPreflighting={isPreflighting}
-            claimMessage={claimMessage}
-            missingTasks={missingTasks}
-            tasks={tasks}
-            onClaim={handleClaimAirdrop}
-            onRefresh={() => void handleClaimAirdrop(true)}
-          />
+              <TaskList
+                title="REQUIRED TASKS"
+                tasks={requiredTasks}
+                renderTaskButton={renderTaskButton}
+              />
+              <TaskList
+                title="BONUS TASKS"
+                tasks={optionalTasks}
+                renderTaskButton={renderTaskButton}
+              />
+              <ProgressPanel
+                completedRequiredTasks={completedRequiredTasks}
+                requiredTotal={requiredTasks.length}
+                completedOptionalTasks={completedOptionalTasks}
+                optionalTotal={optionalTasks.length}
+              />
+              <ClaimSection
+                isClaiming={isClaiming}
+                isPreflighting={isPreflighting}
+                claimMessage={claimMessage}
+                missingTasks={missingTasks}
+                tasks={tasks}
+                onClaim={handleClaimAirdrop}
+                onRefresh={() => void handleClaimAirdrop(true)}
+              />
+            </>
+          ) : (
+            <LeaderboardTab isInMiniApp={Boolean(isInMiniApp)} />
+          )}
         </div>
       </div>
     </main>

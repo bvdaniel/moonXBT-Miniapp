@@ -1,21 +1,10 @@
 "use client";
-import { Button } from "@/components/ui/Button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import sdk from "@farcaster/frame-sdk";
-import { Loader2, Info, CheckCircle2, Wallet } from "lucide-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useAccount, useReadContract, useDisconnect } from "wagmi";
 import { UserContext } from "@farcaster/frame-core/dist/context";
-import Image from "next/image";
-import { FaTasks } from "react-icons/fa";
-import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
 import ClaimSection from "@/components/ClaimSection";
 import TaskList from "@/components/TaskList";
 import ProgressPanel from "@/components/ProgressPanel";
@@ -41,11 +30,6 @@ import { computeMissingRequired } from "@/lib/airdrop";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 
 // Components
-import A0XTaskButton from "@/components/task-components/A0XTaskButton";
-import ShareMiniappButton from "@/components/task-components/ShareMiniappButton";
-import TwitterTaskButton from "@/components/task-components/TwitterTaskButton";
-import FarcasterTaskButton from "@/components/task-components/FarcasterTaskButton";
-import SocialTaskButton from "@/components/task-components/SocialTaskButton";
 import TaskButtonRouter from "@/components/task-components/TaskButtonRouter";
 
 // Constants
@@ -433,14 +417,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       setUserInfo={setUserInfo}
     />
   );
-
-  const getTaskIcon = (id: string) => {
-    const task = tasks.find((t) => t.id === id);
-    return task?.icon || null;
-  };
-
-  const allRequiredCompleted =
-    isClient && isConnected && completedRequiredTasks === requiredTasks.length;
 
   const getRequiredTaskIds = useCallback(
     (): string[] => getRequiredTaskIdsForEnv(isInMiniApp),

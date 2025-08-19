@@ -5,7 +5,10 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
 }
 
-export async function fetchJson<T = any>(url: string, options: FetchJsonOptions = {}): Promise<T> {
+export async function fetchJson<T = any>(
+  url: string,
+  options: FetchJsonOptions = {}
+): Promise<T> {
   const { method = "GET", headers = {}, body, timeoutMs } = options;
 
   const controller = timeoutMs ? new AbortController() : undefined;
@@ -16,7 +19,9 @@ export async function fetchJson<T = any>(url: string, options: FetchJsonOptions 
   try {
     const response = await fetch(url, {
       method,
-      headers: body ? { "Content-Type": "application/json", ...headers } : headers,
+      headers: body
+        ? { "Content-Type": "application/json", ...headers }
+        : headers,
       body: body ? JSON.stringify(body) : undefined,
       signal: controller?.signal,
     });
@@ -34,4 +39,3 @@ export async function fetchJson<T = any>(url: string, options: FetchJsonOptions 
     if (timer) clearTimeout(timer);
   }
 }
-

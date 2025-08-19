@@ -16,6 +16,7 @@ export const REQUIRED_TASKS = {
 
 export const MIN_A0X_REQUIRED = 10_000_000; // tokens (not wei)
 
-export const getRequiredTaskIdsForEnv = (isInMiniApp: boolean | null): string[] =>
+export const getRequiredTaskIdsForEnv = (
+  isInMiniApp: boolean | null
+): string[] =>
   isInMiniApp ? [...REQUIRED_TASKS.miniapp] : [...REQUIRED_TASKS.web];
-

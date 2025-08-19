@@ -137,7 +137,9 @@ export const airdropApi = {
     try {
       return await fetchJson<ParticipantSnapshot>(url);
     } catch (err: any) {
-      throw new Error(`Failed to fetch participant snapshot: ${String(err?.message || err)}`);
+      throw new Error(
+        `Failed to fetch participant snapshot: ${String(err?.message || err)}`
+      );
     }
   },
 

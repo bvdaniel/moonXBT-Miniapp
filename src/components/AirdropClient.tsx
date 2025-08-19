@@ -878,7 +878,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       const missing = computeMissingRequired(
         requiredIds,
         snapshot.tasks,
-        balance
+        balance,
+        MIN_A0X_REQUIRED
       );
 
       if (missing.length > 0) {

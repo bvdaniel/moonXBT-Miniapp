@@ -39,6 +39,20 @@ export interface FarcasterFollowResponse {
   searchedUsername: string;
 }
 
+export interface ParticipantSnapshotTask {
+  completed?: boolean;
+  verificationDetails?: unknown;
+}
+
+export interface ParticipantSnapshot {
+  success?: boolean;
+  fid?: number;
+  username?: string;
+  walletAddress?: string;
+  isFollowing?: boolean;
+  tasks?: Record<string, ParticipantSnapshotTask>;
+}
+
 export const airdropApi = {
   async verifyFarcasterFollow(
     fid: number,
@@ -106,6 +120,26 @@ export const airdropApi = {
       throw new Error("Failed to initialize participant");
     }
 
+    return response.json();
+  },
+
+  async getParticipantSnapshot(params: {
+    fid?: number | string | null;
+    walletAddress?: string;
+  }): Promise<ParticipantSnapshot> {
+    const { fid } = params || {};
+    if (fid === undefined || fid === null || fid === "") {
+      throw new Error("getParticipantSnapshot requires a valid fid");
+    }
+
+    const url = `/api/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(
+        `Failed to fetch participant snapshot (${response.status}): ${text}`
+      );
+    }
     return response.json();
   },
 

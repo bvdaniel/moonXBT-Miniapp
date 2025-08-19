@@ -27,6 +27,8 @@ import WalletSection from "@/components/WalletSection";
 import { useInitializeParticipant } from "@/hooks/useInitializeParticipant";
 import { useTwitterVerification } from "@/hooks/useTwitterVerification";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
+import { useMiniAppDetection } from "@/hooks/useMiniAppDetection";
+import { useAsciiLogoAnimation } from "@/hooks/useAsciiLogoAnimation";
 
 // Hooks and services
 import { useAirdropTasks, type Task } from "@/hooks/useAirdropTasks";
@@ -101,12 +103,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [user, setUser] = useState<UserContext | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [asciiLinesToShow, setAsciiLinesToShow] = useState(0);
   const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
   const [userPoints, setUserPoints] = useState<number>(0);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
-  const [isInMiniApp, setIsInMiniApp] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
@@ -129,7 +129,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     completedOptionalTasks,
     initializeTasks,
     updateTask,
-  } = useAirdropTasks(isInMiniApp ?? true);
+  } = useAirdropTasks(useMiniAppDetection());
 
   // now bind reconcile with the captured updateTask
   reconcileTasksFromSnapshot = (
@@ -171,7 +171,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useInitializeParticipant({
-    isInMiniApp,
+    isInMiniApp: useMiniAppDetection(),
     ready,
     authenticated,
     wallets,
@@ -226,21 +226,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   useEffect(() => {
     setIsClient(true);
     sdk.actions.ready();
-
-    // Detect if running in miniapp
-    const detectMiniApp = async () => {
-      try {
-        const isMiniApp = await sdk.isInMiniApp();
-        setIsInMiniApp(isMiniApp);
-        console.log("Is in Mini App:", isMiniApp);
-      } catch (error) {
-        console.error("Error detecting Mini App:", error);
-        setIsInMiniApp(false);
-      }
-    };
-
-    detectMiniApp();
   }, []);
+  const isInMiniApp = useMiniAppDetection();
 
   // Re-initialize tasks when miniapp status changes
   useEffect(() => {
@@ -263,16 +250,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   }, [ready, authenticated, wallets, handleSignout]);
 
   // ASCII animation
-  useEffect(() => {
-    setAsciiLinesToShow(0);
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setAsciiLinesToShow(i);
-      if (i >= asciiLogoLines.length) clearInterval(interval);
-    }, 120);
-    return () => clearInterval(interval);
-  }, []);
+  const asciiLinesToShow = useAsciiLogoAnimation(asciiLogoLines);
 
   // Get user context
   useEffect(() => {

@@ -803,6 +803,17 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setMissingTasks([]);
     setIsPreflighting(true);
     try {
+      // Pre-checks: ensure wallet/auth context is present for the flow
+      const hasWallet = Boolean(wallets[0]?.address || address);
+      if (!hasWallet) {
+        setClaimMessage("Please connect your wallet to continue.");
+        return;
+      }
+      if (isInMiniApp && !user?.fid) {
+        setClaimMessage("Please authenticate with Farcaster in the mini app.");
+        return;
+      }
+
       if (isInMiniApp && user?.fid) {
         await verifyFarcasterFollow(user.fid, true);
       }

@@ -86,27 +86,19 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [balance, setBalance] = useState<string | null>(null);
   const [user, setUser] = useState<UserContext | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  // removed isClient (unused)
   const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
   const [userPoints, setUserPoints] = useState<number>(0);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  // removed copied (unused)
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
 
-  // defer reconcile definition until updateTask is defined below
-  let reconcileTasksFromSnapshot = (
-    localTasks: Task[],
-    snapshotTasks:
-      | Record<string, { completed?: boolean } | undefined>
-      | undefined
-  ) => {};
-
   // will initialize tasks after miniapp detection is available
 
-  // now bind reconcile with the captured updateTask
-  reconcileTasksFromSnapshot = (
+  // reconcile with the captured updateTask
+  const reconcileTasksFromSnapshot = (
     localTasks: Task[],
     snapshotTasks:
       | Record<string, { completed?: boolean } | undefined>
@@ -175,20 +167,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   }, [logout, wagmiDisconnect]);
 
-  const handleCopy = useCallback(async () => {
-    if (!wallets[0]?.address) return;
-    try {
-      await navigator.clipboard.writeText(wallets[0].address);
-      console.log("Wallet address copied to clipboard");
-      setCopied(true);
-    } catch (error) {
-      console.error("Error copying wallet address", error);
-    } finally {
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
-    }
-  }, [wallets]);
+  // removed handleCopy (unused)
 
   const handleLogin = useCallback(() => {
     login({
@@ -198,7 +177,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   // Initialize and detect miniapp
   useEffect(() => {
-    setIsClient(true);
     sdk.actions.ready();
   }, []);
   const isInMiniApp = useMiniAppDetection();

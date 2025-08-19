@@ -867,7 +867,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     gcTime: 60_000,
   });
 
-  const handleClaimAirdrop = async () => {
+  const handleClaimAirdrop = async (...args: any[]): Promise<void> => {
+    const refreshOnly: boolean | undefined = args[0];
     setClaimMessage(null);
     setMissingTasks([]);
     setIsPreflighting(true);
@@ -909,6 +910,11 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       if (missing.length > 0) {
         setMissingTasks(missing);
         setClaimMessage("Please complete the required tasks below.");
+        return;
+      }
+
+      if (refreshOnly) {
+        setClaimMessage("All required tasks are complete.");
         return;
       }
 
@@ -1242,6 +1248,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                       {claimMessage}
                     </div>
                   )}
+                  <div className="mt-2 flex gap-2">
+                    {missingTasks.length > 0 && (
+                      <Button
+                        onClick={() => {
+                          void handleClaimAirdrop(true);
+                        }}
+                        className="bg-gray-700 hover:bg-gray-800 text-xs h-6 p-0 px-2 rounded-none"
+                      >
+                        Refresh Status
+                      </Button>
+                    )}
+                  </div>
                   {missingTasks.length > 0 && (
                     <ul className="mt-2 text-xs text-blue-100 list-disc list-inside">
                       {missingTasks.map((id) => {

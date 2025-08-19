@@ -27,7 +27,10 @@ interface TaskButtonRouterProps {
   verifyTwitterFollow: (
     fid: number | string | null,
     twitterUsername: string,
-    walletAddress: string
+    targetTwitterUsername: string,
+    walletAddress: string,
+    isAlreadyCompleted: boolean,
+    onNewlyCompleted?: () => void
   ) => Promise<void>;
   handleRefreshVerification: () => Promise<void>;
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>;

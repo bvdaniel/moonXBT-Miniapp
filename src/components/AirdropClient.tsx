@@ -95,8 +95,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
 
-  // --- Helpers (Step A): use shared utilities for preflight ---
-
   // defer reconcile definition until updateTask is defined below
   let reconcileTasksFromSnapshot = (
     localTasks: Task[],
@@ -105,15 +103,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       | undefined
   ) => {};
 
-  const {
-    tasks,
-    requiredTasks,
-    optionalTasks,
-    completedRequiredTasks,
-    completedOptionalTasks,
-    initializeTasks,
-    updateTask,
-  } = useAirdropTasks(useMiniAppDetection());
+  // will initialize tasks after miniapp detection is available
 
   // now bind reconcile with the captured updateTask
   reconcileTasksFromSnapshot = (
@@ -212,6 +202,16 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     sdk.actions.ready();
   }, []);
   const isInMiniApp = useMiniAppDetection();
+
+  const {
+    tasks,
+    requiredTasks,
+    optionalTasks,
+    completedRequiredTasks,
+    completedOptionalTasks,
+    initializeTasks,
+    updateTask,
+  } = useAirdropTasks(isInMiniApp ?? true);
 
   // Re-initialize tasks when miniapp status changes
   useEffect(() => {
@@ -423,7 +423,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     [isInMiniApp]
   );
 
-  // --- Step B: Query wrapper for participant snapshot (manual refetch in preflight) ---
+  // --- Query wrapper for participant snapshot (manual refetch in preflight) ---
   const { refetch: refetchSnapshot } = useQuery({
     queryKey: ["participant-snapshot", user?.fid ?? "none"],
     enabled: false, // only on-demand during preflight

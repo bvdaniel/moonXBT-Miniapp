@@ -185,7 +185,10 @@ export default function TaskButtonRouter({
             await verifyTwitterFollow(
               user?.fid || addressLowerCase || "",
               userInfo.twitterAccount || "",
-              userInfo.walletAddress
+              task.targetUsername,
+              userInfo.walletAddress,
+              task.isCompleted,
+              () => undefined
             );
           }
         }}

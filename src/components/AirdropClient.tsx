@@ -24,6 +24,8 @@ import HeaderSection from "@/components/HeaderSection";
 import BalanceCard from "@/components/BalanceCard";
 import Tabs from "@/components/Tabs";
 import WalletSection from "@/components/WalletSection";
+import { useInitializeParticipant } from "@/hooks/useInitializeParticipant";
+import { useTwitterVerification } from "@/hooks/useTwitterVerification";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
@@ -168,32 +170,13 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   }, [wallets, address]);
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
-  useEffect(() => {
-    const initializeUserWithoutMiniApp = async () => {
-      const wallet = wallets[0];
-      if (wallet) {
-        try {
-          await airdropApi.initializeParticipant({
-            fid: -1, // Use -1 to indicate web user (not Farcaster miniapp)
-            username: `web-user-${wallet.address.slice(0, 8)}`, // Unique username for web users
-            displayName: `Web User ${wallet.address.slice(0, 6)}...`,
-            pfpUrl:
-              "https://api.dicebear.com/7.x/identicon/svg?seed=" +
-              wallet.address, // Generate identicon
-            isFollowingFarcaster: false,
-            walletAddress: wallet.address,
-            referredByFid: sharedFid || null,
-          });
-          console.log("Web user initialized successfully");
-        } catch (error) {
-          console.error("Error initializing web user:", error);
-        }
-      }
-    };
-    if (!isInMiniApp && ready && authenticated && wallets.length > 0) {
-      initializeUserWithoutMiniApp();
-    }
-  }, [ready, authenticated, wallets, isInMiniApp, sharedFid]);
+  useInitializeParticipant({
+    isInMiniApp,
+    ready,
+    authenticated,
+    wallets,
+    sharedFid,
+  });
 
   const { data: tokenBalanceData, isLoading: isLoadingTokenBalance } =
     useReadContract({
@@ -401,7 +384,17 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         user?.fid &&
         (!data.tasks || data.tasks[TaskId.FollowTwitter]?.completed !== true)
       ) {
-        verifyTwitterFollow(user.fid, data.twitterAccount, data.walletAddress);
+        const twitterTask = tasks.find((t) => t.id === TaskId.FollowTwitter);
+        if (twitterTask?.targetUsername) {
+          await verifyTwitterFollow(
+            user.fid,
+            data.twitterAccount,
+            twitterTask.targetUsername,
+            data.walletAddress,
+            Boolean(twitterTask.isCompleted),
+            () => setUserPoints((prev) => prev + 100)
+          );
+        }
       }
     } catch (error) {
       console.error("Error verifying Farcaster follow:", error);
@@ -411,45 +404,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   };
 
-  // Function to verify Twitter follow
-  const verifyTwitterFollow = async (
-    fid: number | string | null,
-    twitterUsername: string,
-    walletAddress: string
-  ) => {
-    const twitterTask = tasks.find((task) => task.id === TaskId.FollowTwitter);
-    if (!twitterTask?.targetUsername) return;
-
-    try {
-      const twitterData = await airdropApi.verifyTwitterFollow({
-        fid,
-        twitterUsername,
-        targetTwitterUsername: twitterTask.targetUsername,
-        walletAddress,
-      });
-
-      updateTask(TaskId.FollowTwitter, {
-        isCompleted: twitterData.dataReceived.isFollowing === true,
-        verificationError:
-          twitterData.dataReceived.isFollowing === true
-            ? null
-            : "You're not following this account yet.",
-      });
-
-      // Add points if newly completed
-      if (
-        twitterData.dataReceived.isFollowing === true &&
-        !twitterTask.isCompleted
-      ) {
-        setUserPoints((prev) => prev + 100);
-      }
-    } catch (error) {
-      console.error("Error verifying Twitter follow:", error);
-      updateTask(TaskId.FollowTwitter, {
-        verificationError: "Error verifying Twitter follow status.",
-      });
-    }
-  };
+  const { verifyTwitterFollow } = useTwitterVerification(updateTask);
 
   // Function to refresh verification
   const handleRefreshVerification = useCallback(async () => {

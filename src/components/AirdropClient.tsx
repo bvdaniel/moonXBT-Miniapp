@@ -9,6 +9,7 @@ import {
 import sdk from "@farcaster/frame-sdk";
 import { Loader2, Info, CheckCircle2, Wallet } from "lucide-react";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useAccount, useReadContract, useDisconnect } from "wagmi";
 import { UserContext } from "@farcaster/frame-core/dist/context";
@@ -97,6 +98,40 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
 
+  // --- Helpers (Step A): pure utilities for preflight ---
+  const computeMissingRequired = useCallback(
+    (
+      requiredIds: string[],
+      snapshotTasks:
+        | Record<string, { completed?: boolean } | undefined>
+        | undefined,
+      currentBalance: string | null
+    ): string[] => {
+      const missing: string[] = [];
+      for (const id of requiredIds) {
+        if (id === "hold-a0x") {
+          const hasRequired =
+            currentBalance !== null &&
+            Number(currentBalance) >= MIN_A0X_REQUIRED;
+          if (!hasRequired) missing.push(id);
+          continue;
+        }
+        const completed = snapshotTasks?.[id]?.completed === true;
+        if (!completed) missing.push(id);
+      }
+      return missing;
+    },
+    []
+  );
+
+  // defer reconcile definition until updateTask is defined below
+  let reconcileTasksFromSnapshot = (
+    localTasks: Task[],
+    snapshotTasks:
+      | Record<string, { completed?: boolean } | undefined>
+      | undefined
+  ) => {};
+
   const {
     tasks,
     requiredTasks,
@@ -106,6 +141,25 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     initializeTasks,
     updateTask,
   } = useAirdropTasks(isInMiniApp ?? true);
+
+  // now bind reconcile with the captured updateTask
+  reconcileTasksFromSnapshot = (
+    localTasks: Task[],
+    snapshotTasks:
+      | Record<string, { completed?: boolean } | undefined>
+      | undefined
+  ) => {
+    localTasks.forEach((t) => {
+      if (t.id === "hold-a0x") return;
+      const backendCompleted = snapshotTasks?.[t.id]?.completed === true;
+      if (backendCompleted !== t.isCompleted) {
+        updateTask(t.id, {
+          isCompleted: backendCompleted,
+          verificationError: null,
+        });
+      }
+    });
+  };
 
   const lastBalanceRef = useRef<string | null>(null);
   const lastPointsRef = useRef<number | null>(null);
@@ -801,6 +855,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     [isInMiniApp]
   );
 
+  // --- Step B: Query wrapper for participant snapshot (manual refetch in preflight) ---
+  const { refetch: refetchSnapshot } = useQuery({
+    queryKey: ["participant-snapshot", user?.fid ?? "none"],
+    enabled: false, // only on-demand during preflight
+    queryFn: async () => {
+      if (!user?.fid) throw new Error("No fid to fetch snapshot");
+      return airdropApi.getParticipantSnapshot({ fid: user.fid });
+    },
+    staleTime: 15_000,
+    gcTime: 60_000,
+  });
+
   const handleClaimAirdrop = async () => {
     setClaimMessage(null);
     setMissingTasks([]);
@@ -821,35 +887,24 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         await verifyFarcasterFollow(user.fid, true);
       }
 
-      const fidToUse: number | string = user?.fid ?? -1;
-      const snapshot = await airdropApi.getParticipantSnapshot({
-        fid: fidToUse,
-      });
+      let snapshot: any;
+      if (user?.fid) {
+        const result = await refetchSnapshot();
+        snapshot = result.data;
+      } else {
+        const fidToUse: number | string = -1; // legacy web path
+        snapshot = await airdropApi.getParticipantSnapshot({ fid: fidToUse });
+      }
 
       // Reconcile local optimistic tasks (except hold-a0x which is governed by on-chain balance)
-      tasks.forEach((t) => {
-        if (t.id === "hold-a0x") return;
-        const backendCompleted = snapshot.tasks?.[t.id]?.completed === true;
-        if (backendCompleted !== t.isCompleted) {
-          updateTask(t.id, {
-            isCompleted: backendCompleted,
-            verificationError: null,
-          });
-        }
-      });
+      reconcileTasksFromSnapshot(tasks, snapshot.tasks);
 
       const requiredIds = getRequiredTaskIds();
-      const missing: string[] = [];
-      requiredIds.forEach((id) => {
-        if (id === "hold-a0x") {
-          const hasRequired =
-            balance !== null && Number(balance) >= MIN_A0X_REQUIRED;
-          if (!hasRequired) missing.push(id);
-        } else {
-          const completed = snapshot.tasks?.[id]?.completed === true;
-          if (!completed) missing.push(id);
-        }
-      });
+      const missing = computeMissingRequired(
+        requiredIds,
+        snapshot.tasks,
+        balance
+      );
 
       if (missing.length > 0) {
         setMissingTasks(missing);

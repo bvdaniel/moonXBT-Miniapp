@@ -18,6 +18,12 @@ import { FaTasks } from "react-icons/fa";
 import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
 import ClaimSection from "@/components/ClaimSection";
 import TaskList from "@/components/TaskList";
+import ProgressPanel from "@/components/ProgressPanel";
+import BackgroundLayer from "@/components/BackgroundLayer";
+import HeaderSection from "@/components/HeaderSection";
+import BalanceCard from "@/components/BalanceCard";
+import Tabs from "@/components/Tabs";
+import WalletSection from "@/components/WalletSection";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
@@ -918,202 +924,55 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
   return (
     <main className="min-h-screen bg-[#1752F0] text-white font-mono relative overflow-hidden">
-      {/* Video background */}
-      <div className="absolute inset-0 z-0 w-full h-full overflow-hidden pointer-events-none">
-        <video
-          src="/bg.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-20"
-        />
-      </div>
-      <div className="scanline pointer-events-none absolute inset-0 z-10" />
+      <BackgroundLayer />
       <div className="relative z-20 flex flex-col items-center justify-center min-h-screen px-2 sm:px-4 py-4">
-        <div className="relative w-full flex justify-center items-center">
-          <pre className="text-white text-[5px] md:text-[7px] leading-none mb-1 select-none text-center drop-shadow-[0_0_2px_white] font-mono tracking-widest overflow-x-auto whitespace-pre max-w-full">
-            {asciiLogoLines.slice(0, asciiLinesToShow).join("\n")}
-          </pre>
-        </div>
+        <HeaderSection
+          title="AIRDROP"
+          subtitle="Complete tasks to earn your airdrop!"
+          isInMiniApp={isInMiniApp}
+          asciiLogoLines={asciiLogoLines}
+          asciiLinesToShow={asciiLinesToShow}
+        />
         <div className="w-full max-w-xs sm:max-w-sm space-y-4">
-          <div className="text-center mb-2">
-            <h1 className="text-base sm:text-lg font-bold mb-1 tracking-widest text-white drop-shadow-[0_0_2px_white]">
-              AIRDROP
-            </h1>
-            <p className="text-blue-100 text-[11px] sm:text-xs tracking-wide">
-              Complete tasks to earn your airdrop!
-            </p>
-            {/* Mini App Detection Info */}
-            {isInMiniApp !== null && (
-              <p className="text-blue-200 text-[10px] mt-1">
-                {isInMiniApp ? "Running in Mini App" : "Running in Web Browser"}
-              </p>
-            )}
-          </div>
-          {isConnected && balance !== null && (
-            <div className="w-full flex flex-col items-center my-3">
-              <span className="text-blue-100 text-xs tracking-widest mb-1">
-                Your $A0X Balance
-              </span>
-              <span className="text-white font-extrabold text-2xl sm:text-3xl bg-gradient-to-r from-blue-200 via-white to-blue-100 bg-clip-text text-transparent">
-                {Number(balance).toLocaleString()}{" "}
-                <span className="text-blue-200 text-lg">A0X</span>
-              </span>
-              <div className="w-1/2 h-px bg-blue-100/30 mt-2" />
-            </div>
+          <BalanceCard isConnected={isConnected} balance={balance} />
+          <Tabs active={activeTab} onChange={setActiveTab} />
+          {!isInMiniApp && (
+            <WalletSection
+              shown={!isInMiniApp}
+              ready={ready}
+              authenticated={authenticated}
+              wallets={wallets}
+              disableLogin={disableLogin}
+              onLogin={handleLogin}
+              onSignout={handleSignout}
+            />
           )}
 
-          <div className="flex justify-center">
-            <div className="inline-flex overflow-hidden border-2 border-white">
-              <button
-                className={`px-6 py-2 font-bold text-sm tracking-widest select-none ${
-                  activeTab === "tasks"
-                    ? "bg-[#1752F0] text-white"
-                    : "bg-[#1a2b6b] text-blue-200 hover:bg-[#223a8c]"
-                } border-r-2 border-white`}
-                style={{
-                  fontFamily: "Press Start 2P, monospace",
-                  letterSpacing: 2,
-                  borderRadius: 0,
-                }}
-                onClick={() => setActiveTab("tasks")}
-              >
-                <FaTasks className="inline-block mr-2 align-middle" />
-                TASKS
-              </button>
-              <button
-                className={`px-6 py-2 font-bold text-sm tracking-widest select-none ${
-                  activeTab === "leaderboard"
-                    ? "bg-[#1752F0] text-white"
-                    : "bg-[#1a2b6b] text-blue-200 hover:bg-[#223a8c]"
-                }`}
-                style={{
-                  fontFamily: "Press Start 2P, monospace",
-                  letterSpacing: 2,
-                  borderRadius: 0,
-                }}
-                onClick={() => setActiveTab("leaderboard")}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="inline-block mr-2 align-middle"
-                >
-                  <rect x="3" y="3" width="18" height="14" rx="2" />
-                  <path d="M8 21h8" />
-                  <path d="M12 17v4" />
-                </svg>
-                LEADERBOARD
-              </button>
-            </div>
-          </div>
-
-          <div className="min-h-[600px] flex flex-col justify-start">
-            {activeTab === "tasks" ? (
-              <div className="space-y-8">
-                {/* Wallet Connection Section */}
-                {!isInMiniApp && (
-                  <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center w-full">
-                    {!ready ? (
-                      <div className="flex flex-col items-center space-y-2">
-                        <Loader2 className="w-5 h-5 text-blue-200 animate-spin" />
-                        <span className="text-blue-200 text-sm">
-                          Loading...
-                        </span>
-                      </div>
-                    ) : !authenticated ? (
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Wallet className="w-5 h-5 text-blue-200" />
-                          <span className="text-blue-200 text-sm font-bold tracking-wide">
-                            WALLET CONNECTION
-                          </span>
-                        </div>
-                        <p className="text-blue-100 text-xs mb-3">
-                          Connect your wallet to participate in the airdrop
-                        </p>
-                        <Button
-                          onClick={handleLogin}
-                          disabled={disableLogin}
-                          className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 w-full rounded-none tracking-wider"
-                        >
-                          <Wallet className="w-4 h-4 mr-2" />
-                          CONNECT WALLET
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center space-y-2">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-400" />
-                          <span className="text-green-400 text-sm font-bold tracking-wide">
-                            WALLET CONNECTED
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-around w-full">
-                          {wallets[0]?.address && (
-                            <p className="text-blue-100 text-sm">
-                              {wallets[0].address.slice(0, 6)}...
-                              {wallets[0].address.slice(-4)}
-                            </p>
-                          )}
-                          <div className="flex space-x-2">
-                            <Button
-                              onClick={handleSignout}
-                              className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-1 text-xs rounded-none"
-                            >
-                              DISCONNECT
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <TaskList
-                  title="REQUIRED TASKS"
-                  tasks={requiredTasks}
-                  renderTaskButton={renderTaskButton}
-                />
-                <TaskList
-                  title="BONUS TASKS"
-                  tasks={optionalTasks}
-                  renderTaskButton={renderTaskButton}
-                />
-                <div className="terminal-border bg-[#1752F0]/80 p-1.5 sm:p-3 text-center mt-2 w-full">
-                  <pre className="text-white text-xs mb-2 select-none">
-                    [{"=".repeat(completedRequiredTasks)}
-                    {" ".repeat(
-                      requiredTasks.length - completedRequiredTasks
-                    )}] {completedRequiredTasks}/{requiredTasks.length} Required
-                    [{"=".repeat(completedOptionalTasks)}
-                    {" ".repeat(
-                      optionalTasks.length - completedOptionalTasks
-                    )}] {completedOptionalTasks}/{optionalTasks.length} Bonus
-                  </pre>
-                  <span className="bios-cursor" />
-                </div>
-                <ClaimSection
-                  isClaiming={isClaiming}
-                  isPreflighting={isPreflighting}
-                  claimMessage={claimMessage}
-                  missingTasks={missingTasks}
-                  tasks={tasks}
-                  onClaim={handleClaimAirdrop}
-                  onRefresh={() => void handleClaimAirdrop(true)}
-                />
-              </div>
-            ) : (
-              <LeaderboardTab isInMiniApp={isInMiniApp || false} />
-            )}
-          </div>
+          <TaskList
+            title="REQUIRED TASKS"
+            tasks={requiredTasks}
+            renderTaskButton={renderTaskButton}
+          />
+          <TaskList
+            title="BONUS TASKS"
+            tasks={optionalTasks}
+            renderTaskButton={renderTaskButton}
+          />
+          <ProgressPanel
+            completedRequiredTasks={completedRequiredTasks}
+            requiredTotal={requiredTasks.length}
+            completedOptionalTasks={completedOptionalTasks}
+            optionalTotal={optionalTasks.length}
+          />
+          <ClaimSection
+            isClaiming={isClaiming}
+            isPreflighting={isPreflighting}
+            claimMessage={claimMessage}
+            missingTasks={missingTasks}
+            tasks={tasks}
+            onClaim={handleClaimAirdrop}
+            onRefresh={() => void handleClaimAirdrop(true)}
+          />
         </div>
       </div>
       <style jsx global>{`

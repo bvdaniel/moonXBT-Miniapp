@@ -16,6 +16,7 @@ import { UserContext } from "@farcaster/frame-core/dist/context";
 import Image from "next/image";
 import { FaTasks } from "react-icons/fa";
 import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
+import ClaimSection from "@/components/ClaimSection";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
@@ -1200,57 +1201,15 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                   </pre>
                   <span className="bios-cursor" />
                 </div>
-                <div className="w-full flex flex-col items-center mt-1">
-                  <Button
-                    onClick={handleClaimAirdrop}
-                    disabled={isPreflighting || isClaiming}
-                    className="w-full bg-green-600 hover:bg-green-700 mt-2"
-                  >
-                    {isClaiming || isPreflighting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                        {isPreflighting
-                          ? "Checking requirements..."
-                          : "Claiming..."}
-                      </>
-                    ) : (
-                      "Claim Airdrop"
-                    )}
-                  </Button>
-                  {claimMessage && (
-                    <div
-                      aria-live="polite"
-                      className={`mt-2 text-sm ${
-                        claimMessage.includes("Error") ||
-                        claimMessage.includes("Failed")
-                          ? "text-red-400"
-                          : "text-green-400"
-                      }`}
-                    >
-                      {claimMessage}
-                    </div>
-                  )}
-                  <div className="mt-2 flex gap-2">
-                    {missingTasks.length > 0 && (
-                      <Button
-                        onClick={() => {
-                          void handleClaimAirdrop(true);
-                        }}
-                        className="bg-gray-700 hover:bg-gray-800 text-xs h-6 p-0 px-2 rounded-none"
-                      >
-                        Refresh Status
-                      </Button>
-                    )}
-                  </div>
-                  {missingTasks.length > 0 && (
-                    <ul className="mt-2 text-xs text-blue-100 list-disc list-inside">
-                      {missingTasks.map((id) => {
-                        const t = tasks.find((x) => x.id === id);
-                        return <li key={id}>{t?.title || id}</li>;
-                      })}
-                    </ul>
-                  )}
-                </div>
+                <ClaimSection
+                  isClaiming={isClaiming}
+                  isPreflighting={isPreflighting}
+                  claimMessage={claimMessage}
+                  missingTasks={missingTasks}
+                  tasks={tasks}
+                  onClaim={handleClaimAirdrop}
+                  onRefresh={() => void handleClaimAirdrop(true)}
+                />
               </div>
             ) : (
               <LeaderboardTab isInMiniApp={isInMiniApp || false} />

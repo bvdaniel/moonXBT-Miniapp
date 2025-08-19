@@ -1,3 +1,4 @@
+import { fetchJson } from "@/lib/http";
 export interface UserInfo {
   fid: number;
   username: string;
@@ -133,14 +134,11 @@ export const airdropApi = {
     }
 
     const url = `/api/a0x-framework/airdrop/participant-exists?fid=${fid}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      throw new Error(
-        `Failed to fetch participant snapshot (${response.status}): ${text}`
-      );
+    try {
+      return await fetchJson<ParticipantSnapshot>(url);
+    } catch (err: any) {
+      throw new Error(`Failed to fetch participant snapshot: ${String(err?.message || err)}`);
     }
-    return response.json();
   },
 
   async verifyTwitterFollow(data: {

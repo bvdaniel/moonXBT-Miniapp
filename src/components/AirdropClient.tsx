@@ -19,11 +19,9 @@ import LeaderboardTab from "@/app/leaderboard/LeaderboardTab";
 import { useLogout, usePrivy, useWallets } from "@privy-io/react-auth";
 
 // Hooks and services
-import {
-  useAirdropTasks,
-  type Task,
-  getRequiredTaskIdsForEnv,
-} from "@/hooks/useAirdropTasks";
+import { useAirdropTasks, type Task } from "@/hooks/useAirdropTasks";
+import { getRequiredTaskIdsForEnv, MIN_A0X_REQUIRED } from "@/constants/tasks";
+import { computeMissingRequired } from "@/lib/airdrop";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 
 // Components
@@ -45,7 +43,7 @@ const tokenABI = [
 ] as const;
 
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
-const MIN_A0X_REQUIRED = 10_000_000;
+// MIN_A0X_REQUIRED imported from constants
 
 const calculateA0XPoints = (balance: number): number => {
   if (balance < MIN_A0X_REQUIRED) return 0;
@@ -98,31 +96,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
 
-  // --- Helpers (Step A): pure utilities for preflight ---
-  const computeMissingRequired = useCallback(
-    (
-      requiredIds: string[],
-      snapshotTasks:
-        | Record<string, { completed?: boolean } | undefined>
-        | undefined,
-      currentBalance: string | null
-    ): string[] => {
-      const missing: string[] = [];
-      for (const id of requiredIds) {
-        if (id === "hold-a0x") {
-          const hasRequired =
-            currentBalance !== null &&
-            Number(currentBalance) >= MIN_A0X_REQUIRED;
-          if (!hasRequired) missing.push(id);
-          continue;
-        }
-        const completed = snapshotTasks?.[id]?.completed === true;
-        if (!completed) missing.push(id);
-      }
-      return missing;
-    },
-    []
-  );
+  // --- Helpers (Step A): use shared utilities for preflight ---
 
   // defer reconcile definition until updateTask is defined below
   let reconcileTasksFromSnapshot = (
@@ -1238,6 +1212,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                   </Button>
                   {claimMessage && (
                     <div
+                      aria-live="polite"
                       className={`mt-2 text-sm ${
                         claimMessage.includes("Error") ||
                         claimMessage.includes("Failed")

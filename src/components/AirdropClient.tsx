@@ -338,27 +338,38 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     ]
   );
 
-  // Get user context
+  // Fetch Farcaster context once in mini app
+  const fetchedContextRef = useRef(false);
   useEffect(() => {
-    const viewProfile = async () => {
+    if (!isInMiniApp || fetchedContextRef.current) return;
+    fetchedContextRef.current = true;
+    (async () => {
       const context = await sdk.context;
-      const user = context?.user;
-      if (user) {
-        setUser(user);
-        if (user.fid) {
-          verifyFarcasterFollow(user.fid);
-        }
-      }
-    };
-    if (isInMiniApp) {
-      viewProfile();
-    }
-  }, [sharedFid, ready, authenticated, isInMiniApp, verifyFarcasterFollow]);
+      const u = context?.user ?? null;
+      setUser(u);
+    })();
+  }, [isInMiniApp]);
+
+  // Trigger verification once per fid in mini app
+  const verifiedFidRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isInMiniApp) return;
+    if (!user?.fid) return;
+    if (verifiedFidRef.current === user.fid) return;
+    verifiedFidRef.current = user.fid;
+    void verifyFarcasterFollow(user.fid);
+  }, [isInMiniApp, user?.fid, verifyFarcasterFollow]);
 
   // Function to refresh verification
+  const refreshingRef = useRef(false);
   const handleRefreshVerification = useCallback(async () => {
-    if (user?.fid) {
+    if (!user?.fid) return;
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    try {
       await verifyFarcasterFollow(user.fid, true);
+    } finally {
+      refreshingRef.current = false;
     }
   }, [user?.fid, verifyFarcasterFollow]);
 
@@ -431,7 +442,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setIsPreflighting(true);
     try {
       // Pre-checks: ensure wallet/auth context is present for the flow
-      const hasWallet = Boolean(wallets[0]?.address || address);
+      const hasWallet = Boolean(
+        wallets[0]?.address || addressRef.current || address
+      );
       if (!hasWallet) {
         setClaimMessage("Please connect your wallet to continue.");
         return;
@@ -442,7 +455,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
 
       if (isInMiniApp && user?.fid) {
-        await verifyFarcasterFollow(user.fid, true);
+        await handleRefreshVerification();
       }
 
       let snapshot: ParticipantSnapshot = {};

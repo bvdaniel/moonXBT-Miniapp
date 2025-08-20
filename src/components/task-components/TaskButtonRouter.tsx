@@ -9,11 +9,12 @@ import SocialTaskButton from "@/components/task-components/SocialTaskButton";
 import { Task } from "@/hooks/useAirdropTasks";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 import { TaskId } from "@/constants/tasks";
+import type { UserContext } from "@farcaster/frame-core/dist/context";
 
 interface TaskButtonRouterProps {
   task: Task;
   isInMiniApp: boolean | null;
-  user: { fid?: number } | null;
+  user: UserContext | null;
   userInfo: UserInfo | null;
   addressLowerCase: string;
   balance: string | null;
@@ -73,7 +74,7 @@ export default function TaskButtonRouter({
       return (
         <ShareMiniappButton
           task={task}
-          user={user as { fid?: number } | null}
+          user={user}
           userPoints={userPoints}
           lastPointsRef={lastPointsRef}
           onTaskUpdate={updateTask}

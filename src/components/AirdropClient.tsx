@@ -28,7 +28,11 @@ import {
   TaskId,
 } from "@/constants/tasks";
 import { computeMissingRequired } from "@/lib/airdrop";
-import { airdropApi, type UserInfo } from "@/services/airdropApi";
+import {
+  airdropApi,
+  type UserInfo,
+  type ParticipantSnapshot,
+} from "@/services/airdropApi";
 
 // Components
 import TaskButtonRouter from "@/components/task-components/TaskButtonRouter";
@@ -441,10 +445,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         await verifyFarcasterFollow(user.fid, true);
       }
 
-      let snapshot: { tasks?: Record<string, { completed?: boolean }> } = {};
+      let snapshot: ParticipantSnapshot = {};
       if (user?.fid) {
         const result = await refetchSnapshot();
-        snapshot = result.data;
+        snapshot = (result.data ?? {}) as ParticipantSnapshot;
       } else {
         const fidToUse: number | string = -1; // legacy web path
         snapshot = await airdropApi.getParticipantSnapshot({ fid: fidToUse });

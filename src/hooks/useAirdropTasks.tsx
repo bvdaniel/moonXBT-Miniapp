@@ -398,7 +398,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
 // Resolve required task ids based on environment (miniapp vs web)
 export function getRequiredTaskIdsForEnv(
   isInMiniApp: boolean | null | undefined
-): string[] {
+): TaskId[] {
   return isInMiniApp
     ? [TaskId.HoldA0X, TaskId.FollowFarcaster]
     : [TaskId.HoldA0X, TaskId.FollowTwitter, TaskId.ShareSocial];

@@ -137,6 +137,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     return "";
   }, [wallets, address]);
 
+  const effectiveAddress = useMemo(() => {
+    return addressRef.current || address || wallets[0]?.address || null;
+  }, [address, wallets]);
+
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useInitializeParticipant({
     isInMiniApp: useMiniAppDetection(),
@@ -442,9 +446,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setIsPreflighting(true);
     try {
       // Pre-checks: ensure wallet/auth context is present for the flow
-      const hasWallet = Boolean(
-        wallets[0]?.address || addressRef.current || address
-      );
+      const hasWallet = Boolean(effectiveAddress);
       if (!hasWallet) {
         setClaimMessage("Please connect your wallet to continue.");
         return;

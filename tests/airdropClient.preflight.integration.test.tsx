@@ -1,22 +1,31 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/* eslint-disable @next/next/no-img-element */
 import * as React from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "./utils/renderWithProviders";
 import { airdropApi } from "@/services/airdropApi";
 // NOTE: We will dynamically import AirdropClient AFTER mocks are defined to avoid hoisting issues
-let AirdropClient: any;
+let AirdropClient: React.ComponentType<{ sharedFid?: number | null }>;
 
 // Mock the UI Button import used by the component to avoid Tailwind specifics
 vi.mock("@/components/ui/Button", () => ({
-  Button: (props: any) => <button {...props} />,
+  Button: (props: React.ComponentProps<"button">) => <button {...props} />,
 }));
 
 // Mock tooltip exports
 vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: any) => <div>{children}</div>,
-  TooltipProvider: ({ children }: any) => <div>{children}</div>,
-  TooltipTrigger: ({ children }: any) => <div>{children}</div>,
-  TooltipContent: ({ children }: any) => <div>{children}</div>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 // Mock farcaster SDK
@@ -32,7 +41,7 @@ vi.mock("@farcaster/frame-sdk", () => ({
 
 // Mock image component
 vi.mock("next/image", () => ({
-  default: (props: any) => <img alt={props.alt || ""} />,
+  default: (props: { alt?: string }) => <img alt={props.alt || ""} />,
 }));
 
 // Mock Privy hooks
@@ -83,9 +92,9 @@ describe("AirdropClient preflight integration", () => {
   it("blocks claim with missing tasks (web path)", async () => {
     // Dynamically import after mocks are set up
     const mod = await import("@/components/AirdropClient");
-    AirdropClient = (mod as any).default;
+    AirdropClient = mod.default;
     const apiMod = await import("@/services/airdropApi");
-    const api = (apiMod as any).airdropApi;
+    const api = apiMod.airdropApi;
     renderWithProviders(<AirdropClient sharedFid={null} />);
     const claim = await screen.findByRole("button", { name: /claim airdrop/i });
     fireEvent.click(claim);

@@ -1,20 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/* eslint-disable @next/next/no-img-element */
 import * as React from "react";
 import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { renderWithProviders } from "./utils/renderWithProviders";
 
 // Mock atoms used by the component
 vi.mock("@/components/ui/Button", () => ({
-  Button: (p: any) => <button {...p} />,
+  Button: (p: React.ComponentProps<"button">) => <button {...p} />,
 }));
 vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: any) => <div>{children}</div>,
-  TooltipProvider: ({ children }: any) => <div>{children}</div>,
-  TooltipTrigger: ({ children }: any) => <div>{children}</div>,
-  TooltipContent: ({ children }: any) => <div>{children}</div>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 vi.mock("next/image", () => ({
-  default: (props: any) => <img alt={props.alt || ""} />,
+  default: (props: { alt?: string }) => <img alt={props.alt || ""} />,
 }));
 
 // Mock external env
@@ -68,7 +77,7 @@ describe("AirdropClient claim happy path integration", () => {
 
   it("proceeds to claim when all required are complete (web)", async () => {
     const mod = await import("@/components/AirdropClient");
-    const AirdropClient = (mod as any).default;
+    const AirdropClient = mod.default;
     renderWithProviders(<AirdropClient sharedFid={null} />);
 
     const claim = await screen.findByRole("button", { name: /claim airdrop/i });

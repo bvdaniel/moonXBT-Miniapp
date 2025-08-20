@@ -210,6 +210,130 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   // ASCII animation
   const asciiLinesToShow = useAsciiLogoAnimation(asciiLogoLines);
 
+  // (moved) Get user context effect below, after verifyFarcasterFollow is defined
+
+  const { verifyTwitterFollow } = useTwitterVerification(updateTask);
+
+  // Complete function to verify Farcaster follow and handle all related tasks
+  const verifyFarcasterFollow = useCallback(
+    async (fid: number, isRefresh: boolean = false) => {
+      const farcasterTask = tasks.find(
+        (task) => task.id === TaskId.FollowFarcaster
+      );
+      if (!farcasterTask || !farcasterTask.targetUsername) return;
+
+      try {
+        const data = await airdropApi.verifyFarcasterFollow(
+          fid,
+          farcasterTask.targetUsername,
+          isRefresh
+        );
+
+        setUserInfo(data);
+        setUserPoints(data.points || 0);
+
+        // Initialize participant if we have the data
+        if (data.fid && data.username) {
+          console.log("Initializing participant", data, user);
+          try {
+            await airdropApi.initializeParticipant({
+              fid: data.fid,
+              username: data.username,
+              displayName: data.displayName,
+              pfpUrl: data.profilePicture || user?.pfpUrl || "",
+              isFollowingFarcaster: data.isFollowing,
+              walletAddress: data.walletAddress,
+              referredByFid: sharedFid || null,
+            });
+          } catch (initError) {
+            console.error("Error initializing participant:", initError);
+          }
+        }
+
+        // Update Farcaster task
+        updateTask(TaskId.FollowFarcaster, {
+          isCompleted: data.isFollowing === true,
+          verificationError:
+            data.isFollowing === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        // Update Twitter task if data available
+        if (data.twitterAccount && data.tasks?.[TaskId.FollowTwitter]) {
+          updateTask(TaskId.FollowTwitter, {
+            isCompleted: data.tasks[TaskId.FollowTwitter].completed === true,
+            verificationError: data.tasks[TaskId.FollowTwitter].completed
+              ? null
+              : "You're not following this account yet.",
+          });
+        }
+
+        // Update social media tasks
+        const socialTasks = [
+          TaskId.FollowInstagram,
+          TaskId.FollowTikTok,
+          TaskId.JoinTelegram,
+          TaskId.FollowZora,
+          TaskId.ShareSocial,
+        ];
+
+        socialTasks.forEach((taskId) => {
+          if (data.tasks?.[taskId]) {
+            updateTask(taskId, {
+              isCompleted: data.tasks[taskId].completed === true,
+              verificationError: data.tasks[taskId].completed
+                ? null
+                : "Task not completed yet.",
+            });
+
+            // Add points for completed tasks
+            if (
+              data.tasks[taskId].completed &&
+              !tasks.find((t) => t.id === taskId)?.isCompleted
+            ) {
+              const points = taskId === TaskId.ShareSocial ? 50 : 100;
+              setUserPoints((prev) => prev + points);
+            }
+          }
+        });
+
+        // Auto-verify Twitter if account is linked but not verified
+        if (
+          data.twitterAccount &&
+          user?.fid &&
+          (!data.tasks || data.tasks[TaskId.FollowTwitter]?.completed !== true)
+        ) {
+          const twitterTask = tasks.find((t) => t.id === TaskId.FollowTwitter);
+          if (twitterTask?.targetUsername) {
+            await verifyTwitterFollow(
+              user.fid,
+              data.twitterAccount,
+              twitterTask.targetUsername,
+              data.walletAddress,
+              Boolean(twitterTask.isCompleted),
+              () => setUserPoints((prev) => prev + 100)
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error verifying Farcaster follow:", error);
+        updateTask(TaskId.FollowFarcaster, {
+          verificationError: "Network error verifying follow status.",
+        });
+      }
+    },
+    [
+      tasks,
+      updateTask,
+      setUserInfo,
+      setUserPoints,
+      verifyTwitterFollow,
+      sharedFid,
+      user,
+    ]
+  );
+
   // Get user context
   useEffect(() => {
     const viewProfile = async () => {
@@ -218,7 +342,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       if (user) {
         setUser(user);
         if (user.fid) {
-          // Use the complete verification function
           verifyFarcasterFollow(user.fid);
         }
       }
@@ -226,128 +349,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     if (isInMiniApp) {
       viewProfile();
     }
-  }, [sharedFid, ready, authenticated, isInMiniApp]);
-
-  // Complete function to verify Farcaster follow and handle all related tasks
-  const verifyFarcasterFollow = async (
-    fid: number,
-    isRefresh: boolean = false
-  ) => {
-    const farcasterTask = tasks.find(
-      (task) => task.id === TaskId.FollowFarcaster
-    );
-    if (!farcasterTask || !farcasterTask.targetUsername) return;
-
-    try {
-      const data = await airdropApi.verifyFarcasterFollow(
-        fid,
-        farcasterTask.targetUsername,
-        isRefresh
-      );
-
-      setUserInfo(data);
-      setUserPoints(data.points || 0);
-
-      // Initialize participant if we have the data
-      if (data.fid && data.username) {
-        console.log("Initializing participant", data, user);
-        try {
-          await airdropApi.initializeParticipant({
-            fid: data.fid,
-            username: data.username,
-            displayName: data.displayName,
-            pfpUrl: data.profilePicture || user?.pfpUrl || "",
-            isFollowingFarcaster: data.isFollowing,
-            walletAddress: data.walletAddress,
-            referredByFid: sharedFid || null,
-          });
-        } catch (initError) {
-          console.error("Error initializing participant:", initError);
-        }
-      }
-
-      // Update Farcaster task
-      updateTask(TaskId.FollowFarcaster, {
-        isCompleted: data.isFollowing === true,
-        verificationError:
-          data.isFollowing === true
-            ? null
-            : "You're not following this account yet.",
-      });
-
-      // Update Twitter task if data available
-      if (data.twitterAccount && data.tasks?.[TaskId.FollowTwitter]) {
-        updateTask(TaskId.FollowTwitter, {
-          isCompleted: data.tasks[TaskId.FollowTwitter].completed === true,
-          verificationError: data.tasks[TaskId.FollowTwitter].completed
-            ? null
-            : "You're not following this account yet.",
-        });
-      }
-
-      // Update social media tasks
-      const socialTasks = [
-        TaskId.FollowInstagram,
-        TaskId.FollowTikTok,
-        TaskId.JoinTelegram,
-        TaskId.FollowZora,
-        TaskId.ShareSocial,
-      ];
-
-      socialTasks.forEach((taskId) => {
-        if (data.tasks?.[taskId]) {
-          updateTask(taskId, {
-            isCompleted: data.tasks[taskId].completed === true,
-            verificationError: data.tasks[taskId].completed
-              ? null
-              : "Task not completed yet.",
-          });
-
-          // Add points for completed tasks
-          if (
-            data.tasks[taskId].completed &&
-            !tasks.find((t) => t.id === taskId)?.isCompleted
-          ) {
-            const points = taskId === TaskId.ShareSocial ? 50 : 100;
-            setUserPoints((prev) => prev + points);
-          }
-        }
-      });
-
-      // Auto-verify Twitter if account is linked but not verified
-      if (
-        data.twitterAccount &&
-        user?.fid &&
-        (!data.tasks || data.tasks[TaskId.FollowTwitter]?.completed !== true)
-      ) {
-        const twitterTask = tasks.find((t) => t.id === TaskId.FollowTwitter);
-        if (twitterTask?.targetUsername) {
-          await verifyTwitterFollow(
-            user.fid,
-            data.twitterAccount,
-            twitterTask.targetUsername,
-            data.walletAddress,
-            Boolean(twitterTask.isCompleted),
-            () => setUserPoints((prev) => prev + 100)
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error verifying Farcaster follow:", error);
-      updateTask(TaskId.FollowFarcaster, {
-        verificationError: "Network error verifying follow status.",
-      });
-    }
-  };
-
-  const { verifyTwitterFollow } = useTwitterVerification(updateTask);
+  }, [sharedFid, ready, authenticated, isInMiniApp, verifyFarcasterFollow]);
 
   // Function to refresh verification
   const handleRefreshVerification = useCallback(async () => {
     if (user?.fid) {
       await verifyFarcasterFollow(user.fid, true);
     }
-  }, [user?.fid, tasks]);
+  }, [user?.fid, verifyFarcasterFollow]);
 
   // Update balance and A0X task
   useEffect(() => {

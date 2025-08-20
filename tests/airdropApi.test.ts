@@ -5,16 +5,17 @@ describe("airdropApi.getParticipantSnapshot", () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    (global as any).fetch = vi.fn();
+    vi.stubGlobal("fetch", vi.fn() as unknown as typeof fetch);
   });
 
   afterEach(() => {
-    global.fetch = originalFetch as any;
+    vi.unstubAllGlobals();
+    global.fetch = originalFetch;
     vi.restoreAllMocks();
   });
 
   it("throws when fid is missing", async () => {
-    // @ts-ignore
+    // @ts-expect-error fid is required
     await expect(airdropApi.getParticipantSnapshot({})).rejects.toThrow(
       /requires a valid fid/
     );

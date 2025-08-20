@@ -136,10 +136,9 @@ export const airdropApi = {
     const url = `/api/a0x-framework/airdrop/participant-exists?fid=${fid}`;
     try {
       return await fetchJson<ParticipantSnapshot>(url);
-    } catch (err: any) {
-      throw new Error(
-        `Failed to fetch participant snapshot: ${String(err?.message || err)}`
-      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to fetch participant snapshot: ${msg}`);
     }
   },
 

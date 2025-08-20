@@ -409,7 +409,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     gcTime: 60_000,
   });
 
-  const handleClaimAirdrop = async (...args: any[]): Promise<void> => {
+  const handleClaimAirdrop = async (
+    ...args: [refreshOnly?: boolean]
+  ): Promise<void> => {
     const refreshOnly: boolean | undefined = args[0];
     setClaimMessage(null);
     setMissingTasks([]);
@@ -430,7 +432,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         await verifyFarcasterFollow(user.fid, true);
       }
 
-      let snapshot: any;
+      let snapshot: { tasks?: Record<string, { completed?: boolean }> } = {};
       if (user?.fid) {
         const result = await refetchSnapshot();
         snapshot = result.data;

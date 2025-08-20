@@ -1,9 +1,10 @@
 import { useCallback } from "react";
 import { airdropApi } from "@/services/airdropApi";
 import { TaskId } from "@/constants/tasks";
+import type { Task } from "@/hooks/useAirdropTasks";
 
 export function useTwitterVerification(
-  updateTask: (taskId: string, updates: any) => void
+  updateTask: (taskId: string, updates: Partial<Task>) => void
 ) {
   const verifyTwitterFollow = useCallback(
     async (

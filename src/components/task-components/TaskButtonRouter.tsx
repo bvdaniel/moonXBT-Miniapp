@@ -73,7 +73,7 @@ export default function TaskButtonRouter({
       return (
         <ShareMiniappButton
           task={task}
-          user={user as any}
+          user={user as { fid?: number } | null}
           userPoints={userPoints}
           lastPointsRef={lastPointsRef}
           onTaskUpdate={updateTask}
@@ -214,16 +214,25 @@ export default function TaskButtonRouter({
         userInfo={userInfo}
         onTaskUpdate={updateTask}
         onUsernameSubmit={async (platform, username) => {
-          const resp = await airdropApi.registerSocialTask(platform as any, {
-            farcasterFid: user?.fid || null,
-            username,
-            targetUsername: task.targetUsername || "",
-            walletAddress: addressLowerCase || "",
-          });
+          const resp = await airdropApi.registerSocialTask(
+            platform as
+              | "instagram"
+              | "tiktok"
+              | "telegram"
+              | "zora"
+              | "farcaster",
+            {
+              farcasterFid: user?.fid || null,
+              username,
+              targetUsername: task.targetUsername || "",
+              walletAddress: addressLowerCase || "",
+            }
+          );
           if (resp.dataReceived?.success === true) {
             setUserInfo((prev) => {
               if (!prev) return prev;
-              const prevTask = prev.tasks?.[task.id] || ({} as any);
+              const prevTask =
+                (prev.tasks?.[task.id] as Record<string, unknown>) || {};
               if (platform === "telegram") {
                 return {
                   ...prev,
@@ -231,7 +240,7 @@ export default function TaskButtonRouter({
                     ...prev.tasks,
                     [task.id]: { ...prevTask, telegramUsername: username },
                   },
-                } as any;
+                } as UserInfo;
               }
               return {
                 ...prev,
@@ -240,12 +249,16 @@ export default function TaskButtonRouter({
                   [task.id]: {
                     ...prevTask,
                     verificationDetails: {
-                      ...(prevTask.verificationDetails || {}),
+                      ...((
+                        prevTask as {
+                          verificationDetails?: Record<string, unknown>;
+                        }
+                      ).verificationDetails || {}),
                       checkedUsername: username,
                     },
                   },
                 },
-              } as any;
+              } as UserInfo;
             });
           }
         }}

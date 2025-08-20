@@ -1,11 +1,11 @@
 export interface FetchJsonOptions {
   method?: string;
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeoutMs?: number;
 }
 
-export async function fetchJson<T = any>(
+export async function fetchJson<T = unknown>(
   url: string,
   options: FetchJsonOptions = {}
 ): Promise<T> {
@@ -19,10 +19,16 @@ export async function fetchJson<T = any>(
   try {
     const response = await fetch(url, {
       method,
-      headers: body
-        ? { "Content-Type": "application/json", ...headers }
-        : headers,
-      body: body ? JSON.stringify(body) : undefined,
+      headers:
+        body !== undefined
+          ? { "Content-Type": "application/json", ...headers }
+          : headers,
+      body:
+        body !== undefined
+          ? typeof body === "string"
+            ? body
+            : JSON.stringify(body)
+          : undefined,
       signal: controller?.signal,
     });
 

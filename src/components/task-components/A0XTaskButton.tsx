@@ -39,6 +39,12 @@ export default function A0XTaskButton({
     try {
       // Check if we're in a miniapp environment
       if (isInMiniApp) {
+        if (!userFid || !address) {
+          console.error(
+            "Swap not available: missing Farcaster fid or wallet address in miniapp context"
+          );
+          throw new Error("Missing wallet context");
+        }
         // Use SDK for in-app swap
         console.log("Using SDK swap (Mini App environment)");
         const result = await sdk.actions.swapToken({
@@ -47,7 +53,7 @@ export default function A0XTaskButton({
           sellAmount: "10000000", // 10 USDC
         });
 
-        if (result.success && userFid) {
+        if (result.success) {
           console.log("Swap successful:", result.swap.transactions);
 
           try {
@@ -80,6 +86,14 @@ export default function A0XTaskButton({
           }
         } else {
           console.error("Swap failed:", result);
+          if (result.reason === "rejected_by_user") {
+            throw new Error("Swap rejected by user");
+          }
+          const msg =
+            result.error?.message ||
+            result.error?.error ||
+            "Unknown swap error";
+          throw new Error(`Swap failed: ${msg}`);
         }
       } else {
         // Redirect to Uniswap for external browser
@@ -134,7 +148,7 @@ export default function A0XTaskButton({
                   )} A0X`
                 : isConnected
                 ? "Loading..."
-                : "Wallet not connected"}{" "}
+                : "Wallet not connected"}
             </span>
             {task.isCompleted && (
               <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -142,7 +156,7 @@ export default function A0XTaskButton({
             <Button
               onClick={handleBuyA0X}
               className="bg-green-600 hover:bg-green-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-              disabled={!isConnected}
+              disabled={isInMiniApp ? !userFid || !address : !isConnected}
               title={
                 isInMiniApp
                   ? "Swap using built-in functionality"

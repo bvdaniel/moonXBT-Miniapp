@@ -45,7 +45,6 @@ const tokenABI = [
 ] as const;
 
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
-// MIN_A0X_REQUIRED imported from constants
 
 const calculateA0XPoints = (balance: number): number => {
   if (balance < MIN_A0X_REQUIRED) return 0;
@@ -87,12 +86,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [balance, setBalance] = useState<string | null>(null);
   const [user, setUser] = useState<UserContext | null>(null);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  // removed isClient (unused)
   const [activeTab, setActiveTab] = useState<"tasks" | "leaderboard">("tasks");
   const [userPoints, setUserPoints] = useState<number>(0);
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
-  // removed copied (unused)
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
 
@@ -167,8 +164,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       console.error("Error signing out:", error);
     }
   }, [logout, wagmiDisconnect]);
-
-  // removed handleCopy (unused)
 
   const handleLogin = useCallback(() => {
     login({

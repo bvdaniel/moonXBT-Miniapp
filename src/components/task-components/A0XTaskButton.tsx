@@ -18,7 +18,6 @@ const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
 };
 
-// MIN_A0X_REQUIRED imported from constants
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
 

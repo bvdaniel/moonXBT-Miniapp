@@ -93,8 +93,6 @@ const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
 };
 
-// MIN_A0X_REQUIRED imported from constants
-
 export const useAirdropTasks = (isInMiniApp: boolean = true) => {
   const [tasks, dispatch] = useReducer(taskReducer, []);
 

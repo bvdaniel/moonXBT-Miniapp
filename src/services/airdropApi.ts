@@ -1,3 +1,4 @@
+import { fetchJson } from "@/lib/http";
 export interface UserInfo {
   fid: number;
   username: string;
@@ -37,6 +38,20 @@ export interface FarcasterFollowResponse {
   twitterAccount: string | null;
   targetUsername: string;
   searchedUsername: string;
+}
+
+export interface ParticipantSnapshotTask {
+  completed?: boolean;
+  verificationDetails?: unknown;
+}
+
+export interface ParticipantSnapshot {
+  success?: boolean;
+  fid?: number;
+  username?: string;
+  walletAddress?: string;
+  isFollowing?: boolean;
+  tasks?: Record<string, ParticipantSnapshotTask>;
 }
 
 export const airdropApi = {
@@ -107,6 +122,24 @@ export const airdropApi = {
     }
 
     return response.json();
+  },
+
+  async getParticipantSnapshot(params: {
+    fid?: number | string | null;
+    walletAddress?: string;
+  }): Promise<ParticipantSnapshot> {
+    const { fid } = params || {};
+    if (fid === undefined || fid === null || fid === "") {
+      throw new Error("getParticipantSnapshot requires a valid fid");
+    }
+
+    const url = `/api/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+    try {
+      return await fetchJson<ParticipantSnapshot>(url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to fetch participant snapshot: ${msg}`);
+    }
   },
 
   async verifyTwitterFollow(data: {

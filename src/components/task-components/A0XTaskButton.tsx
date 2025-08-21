@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
+import { MIN_A0X_REQUIRED } from "@/constants/tasks";
 import sdk from "@farcaster/frame-sdk";
 
 interface A0XTaskButtonProps {
@@ -17,7 +18,6 @@ const parseTextMillion = (amount: number) => {
   return `${Math.floor(amount / 1_000_000)}M`;
 };
 
-const MIN_A0X_REQUIRED = 10_000_000;
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const A0X_TOKEN_ADDRESS = "0x820C5F0fB255a1D18fd0eBB0F1CCefbC4D546dA7";
 
@@ -38,6 +38,12 @@ export default function A0XTaskButton({
     try {
       // Check if we're in a miniapp environment
       if (isInMiniApp) {
+        if (!userFid || !address) {
+          console.error(
+            "Swap not available: missing Farcaster fid or wallet address in miniapp context"
+          );
+          throw new Error("Missing wallet context");
+        }
         // Use SDK for in-app swap
         console.log("Using SDK swap (Mini App environment)");
         const result = await sdk.actions.swapToken({
@@ -46,7 +52,7 @@ export default function A0XTaskButton({
           sellAmount: "10000000", // 10 USDC
         });
 
-        if (result.success && userFid) {
+        if (result.success) {
           console.log("Swap successful:", result.swap.transactions);
 
           try {
@@ -79,6 +85,14 @@ export default function A0XTaskButton({
           }
         } else {
           console.error("Swap failed:", result);
+          if (result.reason === "rejected_by_user") {
+            throw new Error("Swap rejected by user");
+          }
+          const msg =
+            result.error?.message ||
+            result.error?.error ||
+            "Unknown swap error";
+          throw new Error(`Swap failed: ${msg}`);
         }
       } else {
         // Redirect to Uniswap for external browser
@@ -133,7 +147,7 @@ export default function A0XTaskButton({
                   )} A0X`
                 : isConnected
                 ? "Loading..."
-                : "Wallet not connected"}{" "}
+                : "Wallet not connected"}
             </span>
             {task.isCompleted && (
               <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -141,7 +155,7 @@ export default function A0XTaskButton({
             <Button
               onClick={handleBuyA0X}
               className="bg-green-600 hover:bg-green-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-              disabled={!isConnected}
+              disabled={isInMiniApp ? !userFid || !address : !isConnected}
               title={
                 isInMiniApp
                   ? "Swap using built-in functionality"

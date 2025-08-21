@@ -17,6 +17,8 @@
     "build:dev": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "deploy:vercel": "node scripts/deploy.js"
   },
   "dependencies": {
@@ -56,15 +58,26 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.6",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "crypto": "^1.0.1",
     "eslint": "^8",
     "eslint-config-next": "15.0.3",
+    "jsdom": "^26.1.0",
     "localtunnel": "^2.0.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^1.6.0"
+  },
+  "vitest": {
+    "environment": "jsdom",
+    "setupFiles": [
+      "./tests/setupTests.ts"
+    ]
   }
 }

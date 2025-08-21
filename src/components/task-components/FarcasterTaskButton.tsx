@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, ExternalLink, Loader2, X } from "lucide-react";
 import { Task } from "@/hooks/useAirdropTasks";
+import { TaskId } from "@/constants/tasks";
 import sdk from "@farcaster/frame-sdk";
 import { useState } from "react";
 
@@ -39,7 +40,7 @@ export default function FarcasterTaskButton({
     if (user?.fid) {
       await onVerifyFollow(username);
     } else {
-      onTaskUpdate("follow-farcaster", {
+      onTaskUpdate(TaskId.FollowFarcaster, {
         verificationError: "You need to authenticate with Farcaster first.",
       });
     }
@@ -54,7 +55,7 @@ export default function FarcasterTaskButton({
       setUsername("");
     } catch (error) {
       console.error("Error verifying Farcaster follow:", error);
-      onTaskUpdate("follow-farcaster", {
+      onTaskUpdate(TaskId.FollowFarcaster, {
         verificationError: "Failed to verify. Please try again.",
       });
     } finally {

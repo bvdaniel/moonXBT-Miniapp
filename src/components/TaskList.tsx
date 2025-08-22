@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Info, CheckCircle2 } from "lucide-react";
+import * as React from "react";
 import { Task } from "@/hooks/useAirdropTasks";
 import {
   Tooltip,
@@ -14,11 +15,24 @@ interface TaskListProps {
   renderTaskButton: (task: Task) => JSX.Element;
 }
 
-export default function TaskList({
-  title,
-  tasks,
-  renderTaskButton,
-}: TaskListProps) {
+function TaskListBase({ title, tasks, renderTaskButton }: TaskListProps) {
+  const lastLogRef = React.useRef<string>("__none__");
+  React.useEffect(() => {
+    if (!tasks || tasks.length === 0) return;
+    const snapshot = JSON.stringify(
+      tasks.map((t) => ({
+        id: t.id,
+        completed: t.isCompleted,
+        required: t.isRequired,
+      })),
+      null,
+      2
+    );
+    if (snapshot !== lastLogRef.current) {
+      console.warn(`[TaskList] ${title}`, snapshot);
+      lastLogRef.current = snapshot;
+    }
+  }, [title, tasks]);
   return (
     <div>
       <div className="relative flex items-center justify-between">
@@ -80,3 +94,22 @@ export default function TaskList({
     </div>
   );
 }
+
+const areEqual = (prev: TaskListProps, next: TaskListProps) => {
+  if (prev.title !== next.title) return false;
+  if (prev.tasks.length !== next.tasks.length) return false;
+  for (let i = 0; i < prev.tasks.length; i++) {
+    const a = prev.tasks[i];
+    const b = next.tasks[i];
+    if (
+      a.id !== b.id ||
+      a.isCompleted !== b.isCompleted ||
+      a.isRequired !== b.isRequired
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export default React.memo(TaskListBase, areEqual);

@@ -163,6 +163,36 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       },
     });
 
+  // Log when wallet connection/effectiveAddress becomes available
+  useEffect(() => {
+    if (!effectiveAddress) return;
+    console.warn(
+      "[Balance] Wallet connected",
+      JSON.stringify(
+        {
+          effectiveAddress,
+          isConnected,
+          privyWallets: wallets.length,
+          tokenBalanceData:
+            tokenBalanceData !== undefined
+              ? (
+                  tokenBalanceData as unknown as { toString?: () => string }
+                )?.toString?.() ?? String(tokenBalanceData)
+              : "undefined",
+          currentBalanceState: balance,
+        },
+        null,
+        2
+      )
+    );
+  }, [
+    effectiveAddress,
+    isConnected,
+    wallets.length,
+    tokenBalanceData,
+    balance,
+  ]);
+
   // Privy handlers
   const handleSignout = useCallback(async () => {
     try {
@@ -384,6 +414,19 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       const balanceInEther = Number(formatEther(balanceInWei));
       const balanceStr = balanceInEther.toString();
 
+      console.warn(
+        "[Balance] Token balance fetched",
+        JSON.stringify(
+          {
+            effectiveAddress,
+            rawWei: balanceInWei.toString(),
+            ether: balanceInEther,
+          },
+          null,
+          2
+        )
+      );
+
       setBalance(balanceStr);
       lastBalanceRef.current = balanceStr;
 
@@ -397,7 +440,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         pointsDescription: `Current points: ${points} (${balanceInEther.toLocaleString()} A0X)`,
       });
     }
-  }, [tokenBalanceData, updateTask]);
+  }, [tokenBalanceData, updateTask, effectiveAddress]);
 
   const renderTaskButton = (task: Task) => (
     <TaskButtonRouter
@@ -446,6 +489,19 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setIsPreflighting(true);
     try {
       // Pre-checks: ensure wallet/auth context is present for the flow
+      console.warn(
+        "[Claim] Preflight start",
+        JSON.stringify(
+          {
+            isInMiniApp,
+            fid: user?.fid ?? null,
+            effectiveAddress,
+            hasTwitter: Boolean(userInfo?.twitterAccount),
+          },
+          null,
+          2
+        )
+      );
       const hasWallet = Boolean(effectiveAddress);
       if (!hasWallet) {
         setClaimMessage("Please connect your wallet to continue.");

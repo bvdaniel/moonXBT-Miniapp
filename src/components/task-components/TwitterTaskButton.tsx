@@ -56,6 +56,10 @@ export default function TwitterTaskButton({
 
     setIsSubmittingTwitter(true);
     try {
+      console.warn(
+        "[Twitter] Username submitted by user",
+        JSON.stringify({ username: twitterUsername }, null, 2)
+      );
       await onTwitterSubmit(twitterUsername);
       setShowTwitterInput(false);
     } catch (error) {

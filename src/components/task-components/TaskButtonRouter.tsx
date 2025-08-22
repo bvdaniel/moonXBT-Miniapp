@@ -186,6 +186,19 @@ export default function TaskButtonRouter({
         onTaskUpdate={updateTask}
         onTwitterSubmit={async () => {
           if (task.targetUsername && userInfo?.walletAddress) {
+            console.warn(
+              "[Twitter] onTwitterSubmit invoked",
+              JSON.stringify(
+                {
+                  fid: user?.fid || null,
+                  wallet: userInfo.walletAddress,
+                  target: task.targetUsername,
+                  infoTwitter: userInfo.twitterAccount || null,
+                },
+                null,
+                2
+              )
+            );
             await verifyTwitterFollow(
               user?.fid || addressLowerCase || "",
               userInfo.twitterAccount || "",

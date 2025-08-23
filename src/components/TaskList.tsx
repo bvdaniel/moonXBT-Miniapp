@@ -66,7 +66,7 @@ function TaskListBase({ title, tasks, renderTaskButton }: TaskListProps) {
                 <div className="text-blue-100 font-bold flex items-center text-xs sm:text-sm justify-start gap-2 w-full">
                   {task.icon}
                   <span className="w-fit">{task.title}</span>
-                  <TooltipProvider>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="w-3 h-3 ml-1 text-blue-300 cursor-help hover:text-blue-200" />

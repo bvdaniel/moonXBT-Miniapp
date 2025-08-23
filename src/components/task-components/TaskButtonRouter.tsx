@@ -147,33 +147,6 @@ export default function TaskButtonRouter({
   }
 
   if (task.id === TaskId.FollowTwitter) {
-    if (!isInMiniApp) {
-      return (
-        <div className="flex flex-col items-end space-y-1">
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => {
-                if (task.url) {
-                  window.open(task.url, "_blank");
-                  updateTask(task.id, { isCompleted: true });
-                }
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-sm p-0 px-1 h-6 text-white rounded-none"
-            >
-              Follow
-            </Button>
-            {task.isCompleted && (
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-            )}
-          </div>
-          {task.verificationError && (
-            <span className="text-xs text-red-400">
-              {task.verificationError}
-            </span>
-          )}
-        </div>
-      );
-    }
     return (
       <TwitterTaskButton
         task={task}
@@ -184,30 +157,32 @@ export default function TaskButtonRouter({
         isVerifyingAll={false}
         isRefreshing={false}
         onTaskUpdate={updateTask}
-        onTwitterSubmit={async () => {
-          if (task.targetUsername && userInfo?.walletAddress) {
-            console.warn(
-              "[Twitter] onTwitterSubmit invoked",
-              JSON.stringify(
-                {
-                  fid: user?.fid || null,
-                  wallet: userInfo.walletAddress,
-                  target: task.targetUsername,
-                  infoTwitter: userInfo.twitterAccount || null,
-                },
-                null,
-                2
-              )
-            );
-            await verifyTwitterFollow(
-              user?.fid || addressLowerCase || "",
-              userInfo.twitterAccount || "",
-              task.targetUsername,
-              userInfo.walletAddress,
-              task.isCompleted,
-              () => undefined
-            );
-          }
+        onTwitterSubmit={async (typedUsername: string) => {
+          if (!task.targetUsername) return;
+          const fidToUse = user?.fid ?? null;
+          const walletToUse = userInfo?.walletAddress || addressLowerCase || "";
+          console.warn(
+            "[Twitter] onTwitterSubmit invoked",
+            JSON.stringify(
+              {
+                fid: fidToUse,
+                wallet: walletToUse,
+                target: task.targetUsername,
+                typedUsername,
+                infoTwitter: userInfo?.twitterAccount || null,
+              },
+              null,
+              2
+            )
+          );
+          await verifyTwitterFollow(
+            fidToUse,
+            typedUsername,
+            task.targetUsername,
+            walletToUse,
+            task.isCompleted,
+            () => undefined
+          );
         }}
         onRefresh={handleRefreshVerification}
         isInMiniApp={isInMiniApp}

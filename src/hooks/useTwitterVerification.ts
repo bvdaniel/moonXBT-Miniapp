@@ -16,14 +16,6 @@ export function useTwitterVerification(
       onNewlyCompleted?: () => void
     ) => {
       try {
-        console.warn(
-          "[Twitter] Starting verification",
-          JSON.stringify(
-            { fid, twitterUsername, targetTwitterUsername, walletAddress },
-            null,
-            2
-          )
-        );
         const twitterData = await airdropApi.verifyTwitterFollow({
           fid,
           twitterUsername,
@@ -31,10 +23,6 @@ export function useTwitterVerification(
           walletAddress,
         });
 
-        console.warn(
-          "[Twitter] Agent response",
-          JSON.stringify(twitterData, null, 2)
-        );
         updateTask(TaskId.FollowTwitter, {
           isCompleted: twitterData.dataReceived.isFollowing === true,
           verificationError:
@@ -47,7 +35,6 @@ export function useTwitterVerification(
           twitterData.dataReceived.isFollowing === true &&
           !isAlreadyCompleted
         ) {
-          console.warn("[Twitter] Newly completed; awarding points callback");
           onNewlyCompleted?.();
         }
       } catch (error) {

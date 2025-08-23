@@ -21,10 +21,6 @@ export function useInitializeParticipant({
       const wallet = wallets[0];
       if (wallet) {
         try {
-          console.warn(
-            "[Init] Initializing web user",
-            JSON.stringify({ wallet: wallet.address, sharedFid }, null, 2)
-          );
           await airdropApi.initializeParticipant({
             fid: -1,
             username: `web-user-${wallet.address?.slice(0, 8)}`,
@@ -44,14 +40,6 @@ export function useInitializeParticipant({
     };
 
     if (!isInMiniApp && ready && authenticated && wallets.length > 0) {
-      console.warn(
-        "[Init] Conditions met, starting initializeUserWithoutMiniApp",
-        JSON.stringify(
-          { ready, authenticated, wallets: wallets.length },
-          null,
-          2
-        )
-      );
       void initializeUserWithoutMiniApp();
     }
   }, [ready, authenticated, wallets, isInMiniApp, sharedFid]);

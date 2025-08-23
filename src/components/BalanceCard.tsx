@@ -4,10 +4,6 @@ interface BalanceCardProps {
 
 export default function BalanceCard({ balance }: BalanceCardProps) {
   if (balance === null) return null;
-  console.warn(
-    "[BalanceCard] Render",
-    JSON.stringify({ balance: Number(balance) }, null, 2)
-  );
   return (
     <div className="w-full flex flex-col items-center my-3">
       <span className="text-blue-100 text-xs tracking-widest mb-1">

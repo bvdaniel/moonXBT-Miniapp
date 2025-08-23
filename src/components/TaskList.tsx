@@ -97,6 +97,8 @@ function TaskListBase({ title, tasks, renderTaskButton }: TaskListProps) {
 
 const areEqual = (prev: TaskListProps, next: TaskListProps) => {
   if (prev.title !== next.title) return false;
+  // If the render function identity changes (e.g., new deps), re-render
+  if (prev.renderTaskButton !== next.renderTaskButton) return false;
   if (prev.tasks.length !== next.tasks.length) return false;
   for (let i = 0; i < prev.tasks.length; i++) {
     const a = prev.tasks[i];

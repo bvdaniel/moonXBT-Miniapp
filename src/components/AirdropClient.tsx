@@ -442,25 +442,44 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   }, [tokenBalanceData, updateTask, effectiveAddress]);
 
-  const renderTaskButton = (task: Task) => (
-    <TaskButtonRouter
-      task={task}
-      isInMiniApp={isInMiniApp}
-      user={user}
-      userInfo={userInfo}
-      addressLowerCase={addressLowerCase}
-      balance={balance}
-      isLoadingTokenBalance={isLoadingTokenBalance}
-      hasAnyWallet={isConnected || wallets.length > 0}
-      userFid={user?.fid}
-      address={address}
-      lastPointsRef={lastPointsRef}
-      userPoints={userPoints}
-      updateTask={updateTask}
-      verifyTwitterFollow={verifyTwitterFollow}
-      handleRefreshVerification={handleRefreshVerification}
-      setUserInfo={setUserInfo}
-    />
+  const renderTaskButton = useCallback(
+    (task: Task) => (
+      <TaskButtonRouter
+        task={task}
+        isInMiniApp={isInMiniApp}
+        user={user}
+        userInfo={userInfo}
+        addressLowerCase={addressLowerCase}
+        balance={balance}
+        isLoadingTokenBalance={isLoadingTokenBalance}
+        hasAnyWallet={isConnected || wallets.length > 0}
+        userFid={user?.fid}
+        address={address}
+        lastPointsRef={lastPointsRef}
+        userPoints={userPoints}
+        updateTask={updateTask}
+        verifyTwitterFollow={verifyTwitterFollow}
+        handleRefreshVerification={handleRefreshVerification}
+        setUserInfo={setUserInfo}
+      />
+    ),
+    [
+      isInMiniApp,
+      user,
+      userInfo,
+      addressLowerCase,
+      balance,
+      isLoadingTokenBalance,
+      isConnected,
+      wallets.length,
+      address,
+      lastPointsRef,
+      userPoints,
+      updateTask,
+      verifyTwitterFollow,
+      handleRefreshVerification,
+      setUserInfo,
+    ]
   );
 
   const getRequiredTaskIds = useCallback(

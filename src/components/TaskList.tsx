@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Info, CheckCircle2 } from "lucide-react";
+import * as React from "react";
 import { Task } from "@/hooks/useAirdropTasks";
 import {
   Tooltip,
@@ -14,11 +15,24 @@ interface TaskListProps {
   renderTaskButton: (task: Task) => JSX.Element;
 }
 
-export default function TaskList({
-  title,
-  tasks,
-  renderTaskButton,
-}: TaskListProps) {
+function TaskListBase({ title, tasks, renderTaskButton }: TaskListProps) {
+  const lastLogRef = React.useRef<string>("__none__");
+  React.useEffect(() => {
+    if (!tasks || tasks.length === 0) return;
+    const snapshot = JSON.stringify(
+      tasks.map((t) => ({
+        id: t.id,
+        completed: t.isCompleted,
+        required: t.isRequired,
+      })),
+      null,
+      2
+    );
+    if (snapshot !== lastLogRef.current) {
+      console.warn(`[TaskList] ${title}`, snapshot);
+      lastLogRef.current = snapshot;
+    }
+  }, [title, tasks]);
   return (
     <div>
       <div className="relative flex items-center justify-between">
@@ -52,7 +66,7 @@ export default function TaskList({
                 <div className="text-blue-100 font-bold flex items-center text-xs sm:text-sm justify-start gap-2 w-full">
                   {task.icon}
                   <span className="w-fit">{task.title}</span>
-                  <TooltipProvider>
+                  <TooltipProvider delayDuration={0}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="w-3 h-3 ml-1 text-blue-300 cursor-help hover:text-blue-200" />
@@ -80,3 +94,24 @@ export default function TaskList({
     </div>
   );
 }
+
+const areEqual = (prev: TaskListProps, next: TaskListProps) => {
+  if (prev.title !== next.title) return false;
+  // If the render function identity changes (e.g., new deps), re-render
+  if (prev.renderTaskButton !== next.renderTaskButton) return false;
+  if (prev.tasks.length !== next.tasks.length) return false;
+  for (let i = 0; i < prev.tasks.length; i++) {
+    const a = prev.tasks[i];
+    const b = next.tasks[i];
+    if (
+      a.id !== b.id ||
+      a.isCompleted !== b.isCompleted ||
+      a.isRequired !== b.isRequired
+    ) {
+      return false;
+    }
+  }
+  return true;
+};
+
+export default React.memo(TaskListBase, areEqual);

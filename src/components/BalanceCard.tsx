@@ -1,13 +1,9 @@
 interface BalanceCardProps {
-  isConnected: boolean;
   balance: string | null;
 }
 
-export default function BalanceCard({
-  isConnected,
-  balance,
-}: BalanceCardProps) {
-  if (!isConnected || balance === null) return null;
+export default function BalanceCard({ balance }: BalanceCardProps) {
+  if (balance === null) return null;
   return (
     <div className="w-full flex flex-col items-center my-3">
       <span className="text-blue-100 text-xs tracking-widest mb-1">

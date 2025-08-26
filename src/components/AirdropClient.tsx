@@ -156,9 +156,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       address: A0X_TOKEN_ADDRESS,
       abi: tokenABI,
       functionName: "balanceOf",
-      args: [address as `0x${string}`],
+      args: [effectiveAddress as `0x${string}`],
       query: {
-        enabled: !!address && isConnected,
+        enabled: Boolean(effectiveAddress),
         refetchInterval: false,
       },
     });
@@ -399,25 +399,44 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   }, [tokenBalanceData, updateTask]);
 
-  const renderTaskButton = (task: Task) => (
-    <TaskButtonRouter
-      task={task}
-      isInMiniApp={isInMiniApp}
-      user={user}
-      userInfo={userInfo}
-      addressLowerCase={addressLowerCase}
-      balance={balance}
-      isLoadingTokenBalance={isLoadingTokenBalance}
-      hasAnyWallet={isConnected || wallets.length > 0}
-      userFid={user?.fid}
-      address={address}
-      lastPointsRef={lastPointsRef}
-      userPoints={userPoints}
-      updateTask={updateTask}
-      verifyTwitterFollow={verifyTwitterFollow}
-      handleRefreshVerification={handleRefreshVerification}
-      setUserInfo={setUserInfo}
-    />
+  const renderTaskButton = useCallback(
+    (task: Task) => (
+      <TaskButtonRouter
+        task={task}
+        isInMiniApp={isInMiniApp}
+        user={user}
+        userInfo={userInfo}
+        addressLowerCase={addressLowerCase}
+        balance={balance}
+        isLoadingTokenBalance={isLoadingTokenBalance}
+        hasAnyWallet={isConnected || wallets.length > 0}
+        userFid={user?.fid}
+        address={address}
+        lastPointsRef={lastPointsRef}
+        userPoints={userPoints}
+        updateTask={updateTask}
+        verifyTwitterFollow={verifyTwitterFollow}
+        handleRefreshVerification={handleRefreshVerification}
+        setUserInfo={setUserInfo}
+      />
+    ),
+    [
+      isInMiniApp,
+      user,
+      userInfo,
+      addressLowerCase,
+      balance,
+      isLoadingTokenBalance,
+      isConnected,
+      wallets.length,
+      address,
+      lastPointsRef,
+      userPoints,
+      updateTask,
+      verifyTwitterFollow,
+      handleRefreshVerification,
+      setUserInfo,
+    ]
   );
 
   const getRequiredTaskIds = useCallback(
@@ -518,7 +537,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           asciiLinesToShow={asciiLinesToShow}
         />
         <div className="w-full max-w-xs sm:max-w-sm space-y-4">
-          <BalanceCard isConnected={isConnected} balance={balance} />
+          <BalanceCard balance={balance} />
           <Tabs active={activeTab} onChange={setActiveTab} />
           {activeTab === "tasks" ? (
             <>

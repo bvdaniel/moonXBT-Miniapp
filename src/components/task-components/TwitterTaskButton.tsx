@@ -153,7 +153,7 @@ export default function TwitterTaskButton({
             onChange={(e) =>
               setTwitterUsername(e.target.value.replace("@", ""))
             }
-            className="bg-gray-800 text-white text-xs rounded-none px-2 py-1 flex-grow max-w-[120px]"
+            className="bg-gray-700 text-white text-xs rounded w-full px-2 py-1 flex-grow max-w-[120px]"
           />
           <Button
             onClick={handleSubmitTwitterUsername}

@@ -74,49 +74,51 @@ export default function FarcasterTaskButton({
             <span className="text-xs text-green-400">Following</span>
           </div>
         ) : (
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col items-end space-y-2">
             <span className="text-xs text-red-400">Not following</span>
-            <Button
-              onClick={() => handleExternalLink(task.url!)}
-              className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-              title={`Open ${task.socialNetwork} to follow`}
-            >
-              Follow <ExternalLink className="w-3 h-3 ml-1" />
-            </Button>
-            {!isInMiniApp && (
+            <div className="flex items-center space-x-2">
               <Button
-                onClick={() => setShowInput(!showInput)}
-                className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
-                title="Add Farcaster username manually"
+                onClick={() => handleExternalLink(task.url!)}
+                className="bg-purple-600 hover:bg-purple-700 text-xs rounded-none h-6 p-0 px-1 text-white"
+                title={`Open ${task.socialNetwork} to follow`}
               >
-                {showInput ? <X className="w-3 h-3" /> : <span>+</span>}
+                Follow <ExternalLink className="w-3 h-3 ml-1" />
               </Button>
-            )}
-            <Button
-              onClick={handleVerifyFarcasterFollow}
-              className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
-              disabled={isVerifyingFarcaster || !user?.fid}
-              title="Verify following"
-            >
-              Verify
-            </Button>
+              {!isInMiniApp && (
+                <Button
+                  onClick={() => setShowInput(!showInput)}
+                  className="bg-gray-600 hover:bg-gray-700 text-xs text-white rounded-none h-6 w-6 p-0"
+                  title="Add Farcaster username manually"
+                >
+                  {showInput ? <X className="w-3 h-3" /> : <span>+</span>}
+                </Button>
+              )}
+              <Button
+                onClick={handleVerifyFarcasterFollow}
+                className="bg-blue-600 hover:bg-blue-700 text-xs rounded-none h-6 p-0 px-1 text-white"
+                disabled={isVerifyingFarcaster || !user?.fid}
+                title="Verify following"
+              >
+                Verify
+              </Button>
+            </div>
           </div>
         )}
       </div>
 
       {showInput && !task.isCompleted && !isInMiniApp && (
-        <div className="mt-2 flex items-center space-x-2 animate-fade-in w-full justify-end">
+        <div className="mt-2 flex flex-col space-y-2 animate-fade-in w-full">
           <input
             type="text"
             placeholder="@Farcaster username"
             value={username}
             onChange={(e) => setUsername(e.target.value.replace("@", ""))}
-            className="bg-gray-700 text-white text-xs rounded px-2 py-1 flex-grow max-w-[150px] sm:max-w-[120px]"
+            className="bg-gray-700 text-white text-xs rounded px-2 py-1 w-full"
           />
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white"
+            className="bg-blue-600 hover:bg-blue-700 text-xs h-6 p-0 px-1 rounded-none text-white w-full"
           >
             {isSubmitting ? (
               <Loader2 className="w-3 h-3 animate-spin" />

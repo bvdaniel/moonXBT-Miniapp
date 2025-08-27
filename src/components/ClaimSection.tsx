@@ -45,6 +45,7 @@ export default function ClaimSection({
               ? "text-red-400"
               : "text-green-400"
           }`}
+          data-testid="claim-message"
         >
           {claimMessage}
         </div>
@@ -60,10 +61,17 @@ export default function ClaimSection({
         )}
       </div>
       {missingTasks.length > 0 && (
-        <ul className="mt-2 text-xs text-blue-100 list-disc list-inside">
+        <ul
+          className="mt-2 text-xs text-blue-100 list-disc list-inside"
+          data-testid="missing-task-list"
+        >
           {missingTasks.map((id) => {
             const t = tasks.find((x) => x.id === id);
-            return <li key={id}>{t?.title || id}</li>;
+            return (
+              <li key={id} data-testid={`missing-task-item-${id}`}>
+                {t?.title || id}
+              </li>
+            );
           })}
         </ul>
       )}

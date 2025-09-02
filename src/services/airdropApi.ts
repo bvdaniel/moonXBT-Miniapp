@@ -148,14 +148,32 @@ export const airdropApi = {
     targetTwitterUsername: string;
     walletAddress: string;
   }) {
-    const response = await fetch(
-      "/api/a0x-framework/airdrop/verify-twitter-follow",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      }
-    );
+    const shouldUseWebRoute =
+      data.fid === null || data.fid === undefined || Number(data.fid) <= 0;
+
+    const endpoint = shouldUseWebRoute
+      ? "/api/a0x-framework/airdrop/verify-twitter-follow-web"
+      : "/api/a0x-framework/airdrop/verify-twitter-follow";
+
+    const body = shouldUseWebRoute
+      ? {
+          id: data.walletAddress,
+          twitterUsername: data.twitterUsername,
+          targetTwitterUsername: data.targetTwitterUsername,
+          walletAddress: data.walletAddress,
+        }
+      : {
+          fid: data.fid,
+          twitterUsername: data.twitterUsername,
+          targetTwitterUsername: data.targetTwitterUsername,
+          walletAddress: data.walletAddress,
+        };
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
     if (!response.ok) {
       throw new Error("Failed to verify Twitter follow");

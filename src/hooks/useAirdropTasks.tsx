@@ -63,10 +63,10 @@ const taskReducer = (state: Task[], action: TaskAction): Task[] => {
               ...task,
               isCompleted: false,
               verificationError: null,
-              points: task.id === TaskId.HoldA0X ? 10 : task.points,
+              points: task.id === TaskId.HoldA0X ? 100 : task.points,
               pointsDescription:
                 task.id === TaskId.HoldA0X
-                  ? "10 points for holding 10M A0X, +1 point per 1M A0X"
+                  ? "100 points for holding 10M A0X, +1 point per 1M A0X"
                   : task.pointsDescription,
             }
           : task
@@ -77,10 +77,10 @@ const taskReducer = (state: Task[], action: TaskAction): Task[] => {
         ...task,
         isCompleted: false,
         verificationError: null,
-        points: task.id === TaskId.HoldA0X ? 10 : task.points,
+        points: task.id === TaskId.HoldA0X ? 100 : task.points,
         pointsDescription:
           task.id === TaskId.HoldA0X
-            ? "10 points for holding 10M A0X, +1 point per 1M A0X"
+            ? "100 points for holding 10M A0X, +1 point per 1M A0X"
             : task.pointsDescription,
       }));
 
@@ -120,7 +120,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
             />
           ),
           verificationError: null,
-          points: 10,
+          points: 100,
           pointsDescription:
             "10 points for holding 10M A0X, +1 point per 1M A0X",
         },

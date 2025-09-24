@@ -246,11 +246,11 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           try {
             await airdropApi.initializeParticipant({
               fid: data.fid,
-              username: data.username,
-              displayName: data.displayName,
+              username: data.username || "",
+              displayName: data.displayName || user?.username || "",
               pfpUrl: data.profilePicture || user?.pfpUrl || "",
-              isFollowingFarcaster: data.isFollowing,
-              walletAddress: data.walletAddress,
+              isFollowingFarcaster: Boolean(data.isFollowing),
+              walletAddress: data.walletAddress || effectiveAddress || "",
               referredByFid: sharedFid || null,
             });
           } catch (initError) {
@@ -316,9 +316,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           if (twitterTask?.targetUsername) {
             await verifyTwitterFollow(
               user.fid,
-              data.twitterAccount,
+              data.twitterAccount || "",
               twitterTask.targetUsername,
-              data.walletAddress,
+              data.walletAddress || "",
               Boolean(twitterTask.isCompleted),
               () => setUserPoints((prev) => prev + 100)
             );
@@ -339,6 +339,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       verifyTwitterFollow,
       sharedFid,
       user,
+      effectiveAddress,
     ]
   );
 
@@ -438,6 +439,78 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       setUserInfo,
     ]
   );
+
+  // Web auto-verification by wallet (if we have an address but no fid)
+  const walletVerifyOnceRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isInMiniApp) return;
+    if (user?.fid) return;
+    const farcasterTask = tasks.find((t) => t.id === TaskId.FollowFarcaster);
+    if (!farcasterTask?.targetUsername) return;
+    if (!effectiveAddress) return;
+    if (walletVerifyOnceRef.current === effectiveAddress) return;
+    walletVerifyOnceRef.current = effectiveAddress;
+    (async () => {
+      try {
+        const data = await airdropApi.verifyFarcasterFollowByWalletAddress(
+          effectiveAddress
+        );
+        setUserInfo((prev) => ({ ...(prev || {}), ...data } as UserInfo));
+
+        console.log("[Wallet auto-verification] data", data);
+
+        updateTask(TaskId.FollowFarcaster, {
+          isCompleted: data.isFollowing === true,
+          verificationError:
+            data.isFollowing === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        updateTask(TaskId.FollowTwitter, {
+          isCompleted: data.tasks?.[TaskId.FollowTwitter]?.completed === true,
+          verificationError:
+            data.tasks?.[TaskId.FollowTwitter]?.completed === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        updateTask(TaskId.FollowInstagram, {
+          isCompleted: data.tasks?.[TaskId.FollowInstagram]?.completed === true,
+          verificationError:
+            data.isFollowing === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        updateTask(TaskId.FollowTikTok, {
+          isCompleted: data.tasks?.[TaskId.FollowTikTok]?.completed === true,
+          verificationError:
+            data.tasks?.[TaskId.FollowTikTok]?.completed === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        updateTask(TaskId.FollowZora, {
+          isCompleted: data.tasks?.[TaskId.FollowZora]?.completed === true,
+          verificationError:
+            data.tasks?.[TaskId.FollowZora]?.completed === true
+              ? null
+              : "You're not following this account yet.",
+        });
+
+        updateTask(TaskId.JoinTelegram, {
+          isCompleted: data.tasks?.[TaskId.JoinTelegram]?.completed === true,
+          verificationError:
+            data.tasks?.[TaskId.JoinTelegram]?.completed === true
+              ? null
+              : "You're not following this account yet.",
+        });
+      } catch (e) {
+        // silent failure; user can still verify manually
+      }
+    })();
+  }, [isInMiniApp, user?.fid, effectiveAddress, tasks, updateTask]);
 
   const getRequiredTaskIds = useCallback(
     (): string[] => getRequiredTaskIdsForEnv(isInMiniApp),

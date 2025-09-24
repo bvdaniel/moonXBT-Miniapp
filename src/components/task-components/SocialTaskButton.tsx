@@ -26,6 +26,19 @@ export default function SocialTaskButton({
   const [username, setUsername] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const readStringProp = (obj: unknown, key: string): string | null => {
+    if (
+      obj &&
+      typeof obj === "object" &&
+      key in (obj as Record<string, unknown>)
+    ) {
+      const value = (obj as Record<string, unknown>)[key];
+      if (typeof value === "string") return value;
+      if (value !== undefined && value !== null) return String(value);
+    }
+    return null;
+  };
+
   const handleExternalLink = (url: string) => {
     if (isInMiniApp) {
       sdk.actions.openUrl(url);
@@ -50,14 +63,34 @@ export default function SocialTaskButton({
   };
 
   const getPreviousUsername = (): string | null => {
+    const taskData = userInfo?.tasks?.[task.id];
+    if (!taskData) return null;
+
     if (task.socialNetwork === "tiktok" || task.socialNetwork === "instagram") {
-      return userInfo?.tasks?.[task.id]?.verificationDetails?.checkedUsername
-        ? String(userInfo.tasks[task.id].verificationDetails.checkedUsername)
-        : null;
+      const fromChecked = readStringProp(
+        taskData.verificationDetails,
+        "checkedUsername"
+      );
+      if (fromChecked) return fromChecked;
+      const fromSubmitted = readStringProp(
+        taskData.verificationDetails,
+        "submittedUsername"
+      );
+      return fromSubmitted;
     }
-    return userInfo?.tasks?.[task.id]?.telegramUsername
-      ? String(userInfo.tasks[task.id].telegramUsername)
-      : null;
+
+    // Telegram or others
+    const legacyTelegram = readStringProp(
+      taskData as unknown,
+      "telegramUsername"
+    );
+    if (legacyTelegram) return legacyTelegram;
+    const fromSubmitted = readStringProp(
+      taskData.verificationDetails,
+      "submittedUsername"
+    );
+    if (fromSubmitted) return fromSubmitted;
+    return readStringProp(taskData.verificationDetails, "checkedUsername");
   };
 
   const handleSubmit = async () => {

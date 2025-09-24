@@ -1,30 +1,17 @@
 import { fetchJson } from "@/lib/http";
 export interface UserInfo {
-  fid: number;
-  username: string;
-  displayName: string;
-  profilePicture: string;
-  followerCount: number;
-  followingCount: number;
-  isFollowing: boolean;
-  walletAddress: string;
-  twitterAccount: string | null;
-  tasks: {
-    [key: string]: {
-      isRequired: boolean;
-      isCompleted: boolean;
-      verificationDetails: {
-        checkedUsername: string;
-        submittedUsername?: string;
-        targetUsername: string;
-        targetGroup: string;
-      };
-      verificationAttempts: number;
-      lastVerified: string;
-      completed: boolean;
-      telegramUsername: string;
-    };
-  };
+  fid?: number;
+  username?: string;
+  displayName?: string;
+  profilePicture?: string;
+  followerCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  walletAddress?: string | null;
+  twitterAccount?: string | null;
+  targetUsername?: string;
+  searchedUsername?: string;
+  tasks?: Record<string, ParticipantSnapshotTask>;
   points?: number;
 }
 

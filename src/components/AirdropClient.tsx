@@ -246,11 +246,15 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           try {
             await airdropApi.initializeParticipant({
               fid: data.fid,
-              username: data.username,
-              displayName: data.displayName,
+              username: data.username || "",
+              displayName:
+                data.displayName ||
+                (user as any)?.displayName ||
+                user?.username ||
+                "",
               pfpUrl: data.profilePicture || user?.pfpUrl || "",
-              isFollowingFarcaster: data.isFollowing,
-              walletAddress: data.walletAddress,
+              isFollowingFarcaster: Boolean(data.isFollowing),
+              walletAddress: data.walletAddress || effectiveAddress || "",
               referredByFid: sharedFid || null,
             });
           } catch (initError) {
@@ -316,9 +320,9 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           if (twitterTask?.targetUsername) {
             await verifyTwitterFollow(
               user.fid,
-              data.twitterAccount,
+              data.twitterAccount || "",
               twitterTask.targetUsername,
-              data.walletAddress,
+              data.walletAddress || "",
               Boolean(twitterTask.isCompleted),
               () => setUserPoints((prev) => prev + 100)
             );

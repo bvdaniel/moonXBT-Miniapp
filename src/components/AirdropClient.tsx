@@ -247,11 +247,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
             await airdropApi.initializeParticipant({
               fid: data.fid,
               username: data.username || "",
-              displayName:
-                data.displayName ||
-                (user as any)?.displayName ||
-                user?.username ||
-                "",
+              displayName: data.displayName || user?.username || "",
               pfpUrl: data.profilePicture || user?.pfpUrl || "",
               isFollowingFarcaster: Boolean(data.isFollowing),
               walletAddress: data.walletAddress || effectiveAddress || "",
@@ -343,6 +339,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       verifyTwitterFollow,
       sharedFid,
       user,
+      effectiveAddress,
     ]
   );
 

@@ -38,6 +38,7 @@ export interface FarcasterFollowResponse {
   twitterAccount: string | null;
   targetUsername: string;
   searchedUsername: string;
+  tasks?: Record<string, ParticipantSnapshotTask>;
 }
 
 export interface ParticipantSnapshotTask {
@@ -96,6 +97,22 @@ export const airdropApi = {
       );
     }
 
+    return response.json();
+  },
+
+  async verifyFarcasterFollowByWalletAddress(
+    walletAddress: string
+  ): Promise<FarcasterFollowResponse> {
+    const params = new URLSearchParams({ walletAddress });
+    const response = await fetch(
+      `/api/verify-follow-by-wallet?${params.toString()}`
+    );
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || "Failed to verify Farcaster follow by wallet"
+      );
+    }
     return response.json();
   },
 

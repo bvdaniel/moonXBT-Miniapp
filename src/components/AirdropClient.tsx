@@ -122,29 +122,42 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const lastBalanceRef = useRef<string | null>(null);
   const lastPointsRef = useRef<number | null>(null);
   const addressRef = useRef<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   // Privy computed values
   const disableLogin = !ready || (ready && authenticated);
 
-  const addressLowerCase = useMemo(() => {
-    if (wallets[0] && wallets[0].address) {
-      addressRef.current = wallets[0].address;
-      return wallets[0].address.toLowerCase();
+  useEffect(() => {
+    // Keep a ref and state with the latest known address from either Privy or Wagmi
+    const latest = wallets[0]?.address || address || null;
+    if (latest && latest !== addressRef.current) {
+      addressRef.current = latest;
+      setWalletAddress(latest);
     }
-    if (address) {
-      addressRef.current = address;
-      return address.toLowerCase();
-    }
-    return "";
   }, [wallets, address]);
 
-  const effectiveAddress = useMemo(() => {
-    return addressRef.current || address || wallets[0]?.address || null;
-  }, [address, wallets]);
+  // Fallback: after a refresh, poll briefly until an address appears
+  useEffect(() => {
+    if (walletAddress) return;
+    let attempts = 0;
+    const id = setInterval(() => {
+      attempts += 1;
+      const latest = wallets[0]?.address || address || null;
+      if (latest) {
+        addressRef.current = latest;
+        setWalletAddress(latest);
+        clearInterval(id);
+      }
+      if (attempts > 12) clearInterval(id); // ~6s max
+    }, 500);
+    return () => clearInterval(id);
+  }, [walletAddress, wallets, address]);
 
-  const hasWalletAvailable = useMemo(() => {
-    return Boolean(wallets[0]?.address || address || addressRef.current);
-  }, [wallets, address]);
+  const addressLowerCase = (walletAddress || "").toLowerCase();
+
+  const effectiveAddress = walletAddress;
+
+  const hasWalletAvailable = Boolean(walletAddress);
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useInitializeParticipant({
@@ -561,8 +574,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         const result = await refetchSnapshot();
         snapshot = (result.data ?? {}) as ParticipantSnapshot;
       } else {
-        const fidToUse: number | string = -1; // legacy web path
-        snapshot = await airdropApi.getParticipantSnapshot({ fid: fidToUse });
+        // const fidToUse: number | string = -1; // legacy web path
+        snapshot = await airdropApi.getParticipantSnapshot({
+          walletAddress: effectiveAddress || "",
+        });
       }
 
       // Reconcile local optimistic tasks (except hold-a0x which is governed by on-chain balance)

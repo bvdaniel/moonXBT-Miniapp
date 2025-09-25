@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const body: InitializeParticipantBody = await request.json();
 
     // Validate required fields
-    if (!body.fid || !body.username || !body.walletAddress || !body.pfpUrl) {
+    if (!(body.fid || body.walletAddress) || !body.username || !body.pfpUrl) {
       return NextResponse.json(
         { error: "fid, username, walletAddress and pfpUrl are required" },
         { status: 400 }

@@ -180,16 +180,16 @@ export const airdropApi = {
 
     const body = shouldUseWebRoute
       ? {
-          id: data.walletAddress.toUpperCase(),
+          id: data.walletAddress.toLowerCase(),
           twitterUsername: data.twitterUsername,
           targetTwitterUsername: data.targetTwitterUsername,
-          walletAddress: data.walletAddress.toUpperCase(),
+          walletAddress: data.walletAddress.toLowerCase(),
         }
       : {
           fid: data.fid,
           twitterUsername: data.twitterUsername,
           targetTwitterUsername: data.targetTwitterUsername,
-          walletAddress: data.walletAddress,
+          walletAddress: data.walletAddress.toLowerCase(),
         };
 
     const response = await fetch(endpoint, {

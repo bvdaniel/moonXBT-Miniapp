@@ -231,7 +231,7 @@ export const airdropApi = {
     };
 
     if (!data.farcasterFid) {
-      body.id = data.walletAddress.toUpperCase();
+      body.id = data.walletAddress.toLowerCase();
     } else {
       body.farcasterFid = data.farcasterFid;
     }

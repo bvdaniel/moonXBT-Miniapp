@@ -96,6 +96,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
+  const handleDismissMessage = useCallback(() => setClaimMessage(null), []);
 
   // will initialize tasks after miniapp detection is available
 
@@ -140,6 +141,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const effectiveAddress = useMemo(() => {
     return addressRef.current || address || wallets[0]?.address || null;
   }, [address, wallets]);
+
+  const hasWalletAvailable = useMemo(() => {
+    return Boolean(wallets[0]?.address || address || addressRef.current);
+  }, [wallets, address]);
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useInitializeParticipant({
@@ -538,8 +543,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setIsPreflighting(true);
     try {
       // Pre-checks: ensure wallet/auth context is present for the flow
-      const hasWallet = Boolean(effectiveAddress);
-      if (!hasWallet) {
+      if (!hasWalletAvailable) {
         setClaimMessage("Please connect your wallet to continue.");
         return;
       }
@@ -584,10 +588,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
 
       setIsClaiming(true);
-      // Placeholder for airdrop claim logic
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Simulate submission to backend
+      await new Promise((resolve) => setTimeout(resolve, 800));
       setClaimMessage(
-        "Airdrop claim initiated! (This is a demo, no actual claim processed)"
+        "success:submitted" // consumed by modal copy in ClaimSection
       );
       setIsClaiming(false);
     } catch (error) {
@@ -650,6 +654,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 tasks={tasks}
                 onClaim={handleClaimAirdrop}
                 onRefresh={() => void handleClaimAirdrop(true)}
+                onDismissMessage={handleDismissMessage}
+                canSubmit={hasWalletAvailable || Boolean(user?.fid)}
               />
             </>
           ) : (

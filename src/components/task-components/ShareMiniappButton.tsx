@@ -27,9 +27,9 @@ export default function ShareMiniappButton({
           lastPointsRef.current !== null ? lastPointsRef.current : userPoints;
 
         const result = await sdk.actions.composeCast({
-          text: `I'm participating in $moonXBT airdrop, the first autonomous content creator on Base! I've earned ${currentPoints} points so far!`,
-          embeds: [
-            `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}`,
+          text: `I'm participating in moonXBT airdrop to get $A0X tokens, the first autonomous content creator on Base! I've earned ${currentPoints} points so far!`,
+                    embeds: [
+            `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}&pfpUrl=${user.pfp_url}&points=${currentPoints}`
           ],
         });
 

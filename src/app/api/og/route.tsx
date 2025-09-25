@@ -13,9 +13,9 @@ export const runtime = "edge";
 const siteUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
 async function fetchFont() {
-  const fontUrl = new URL("/fonts/PressStart2P-Regular.ttf", siteUrl);
-  const fontRes = await fetch(fontUrl.toString());
-  return fontRes.arrayBuffer();
+  // Skip custom font loading to avoid compatibility issues with Vercel OG
+  // The system will fall back to system-ui which works well
+  return new ArrayBuffer(0);
 }
 
 async function getRelevantFollowers(targetFid: number, viewerFid: number) {
@@ -265,7 +265,10 @@ export async function GET(request: Request) {
   // const users: NeynarUser[] = mockBulkData.users || [];
   const followerCount = users[0]?.follower_count ?? 0;
 
-  const fontData = await fetchFont();
+  const imageResponseOptions: any = {
+    width: 1500,
+    height: 1000,
+  };
 
   return new ImageResponse(
     (
@@ -277,23 +280,29 @@ export async function GET(request: Request) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "black",
-          fontFamily: "Press Start 2P",
+          background: siteUrl.includes("localhost")
+            ? "black"
+            : "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+          fontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}
       >
-        <img
-          src={`${siteUrl}/opengraph-image.png`}
-          width={1500}
-          height={1000}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-          }}
-          alt="MoonXBT OG Background"
-        />
+        {/* Background image - only show if available */}
+        {siteUrl.includes("localhost") && (
+          <img
+            src={`${siteUrl}/opengraph-image.png`}
+            width={1500}
+            height={1000}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+            }}
+            alt="MoonXBT OG Background"
+          />
+        )}
         {/* Overlay avatars and count */}
         <div
           style={{
@@ -391,17 +400,6 @@ export async function GET(request: Request) {
         </div>
       </div>
     ),
-    {
-      width: 1500,
-      height: 1000,
-      fonts: [
-        {
-          name: "Press Start 2P",
-          data: fontData,
-          style: "normal",
-          weight: 400,
-        },
-      ],
-    }
+    imageResponseOptions
   );
 }

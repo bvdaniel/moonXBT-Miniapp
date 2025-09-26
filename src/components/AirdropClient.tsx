@@ -304,18 +304,30 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
           TaskId.ShareSocial,
         ];
 
+        // Map API task keys to internal task IDs
+        const apiTaskMapping: Record<string, string> = {
+          "post-twitter": TaskId.ShareSocial,
+        };
+
         socialTasks.forEach((taskId) => {
-          if (data.tasks?.[taskId]) {
+          // Check both the direct task ID and any mapped API keys
+          const apiKey =
+            Object.keys(apiTaskMapping).find(
+              (key) => apiTaskMapping[key] === taskId
+            ) || taskId;
+          const taskData = data.tasks?.[apiKey] || data.tasks?.[taskId];
+
+          if (taskData) {
             updateTask(taskId, {
-              isCompleted: data.tasks[taskId].completed === true,
-              verificationError: data.tasks[taskId].completed
+              isCompleted: taskData.completed === true,
+              verificationError: taskData.completed
                 ? null
                 : "Task not completed yet.",
             });
 
             // Add points for completed tasks
             if (
-              data.tasks[taskId].completed &&
+              taskData.completed &&
               !tasks.find((t) => t.id === taskId)?.isCompleted
             ) {
               const points = taskId === TaskId.ShareSocial ? 50 : 100;
@@ -524,6 +536,29 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               ? null
               : "You're not following this account yet.",
         });
+
+        // Map API task keys to internal task IDs
+        const apiTaskMapping: Record<string, string> = {
+          "post-twitter": TaskId.ShareSocial,
+        };
+
+        // Update ShareSocial task (mapped from post-twitter API key)
+        const shareSocialApiKey =
+          Object.keys(apiTaskMapping).find(
+            (key) => apiTaskMapping[key] === TaskId.ShareSocial
+          ) || TaskId.ShareSocial;
+        const shareSocialData =
+          data.tasks?.[shareSocialApiKey] || data.tasks?.[TaskId.ShareSocial];
+
+        if (shareSocialData) {
+          updateTask(TaskId.ShareSocial, {
+            isCompleted: shareSocialData.completed === true,
+            verificationError:
+              shareSocialData.completed === true
+                ? null
+                : "Task not completed yet.",
+          });
+        }
       } catch (e) {
         // silent failure; user can still verify manually
       }

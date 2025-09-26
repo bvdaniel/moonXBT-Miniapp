@@ -96,6 +96,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [missingTasks, setMissingTasks] = useState<string[]>([]);
   const [isPreflighting, setIsPreflighting] = useState(false);
+  const handleDismissMessage = useCallback(() => setClaimMessage(null), []);
 
   // will initialize tasks after miniapp detection is available
 
@@ -121,25 +122,42 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   const lastBalanceRef = useRef<string | null>(null);
   const lastPointsRef = useRef<number | null>(null);
   const addressRef = useRef<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
 
   // Privy computed values
   const disableLogin = !ready || (ready && authenticated);
 
-  const addressLowerCase = useMemo(() => {
-    if (wallets[0] && wallets[0].address) {
-      addressRef.current = wallets[0].address;
-      return wallets[0].address.toLowerCase();
+  useEffect(() => {
+    // Keep a ref and state with the latest known address from either Privy or Wagmi
+    const latest = wallets[0]?.address || address || null;
+    if (latest && latest !== addressRef.current) {
+      addressRef.current = latest;
+      setWalletAddress(latest);
     }
-    if (address) {
-      addressRef.current = address;
-      return address.toLowerCase();
-    }
-    return "";
   }, [wallets, address]);
 
-  const effectiveAddress = useMemo(() => {
-    return addressRef.current || address || wallets[0]?.address || null;
-  }, [address, wallets]);
+  // Fallback: after a refresh, poll briefly until an address appears
+  useEffect(() => {
+    if (walletAddress) return;
+    let attempts = 0;
+    const id = setInterval(() => {
+      attempts += 1;
+      const latest = wallets[0]?.address || address || null;
+      if (latest) {
+        addressRef.current = latest;
+        setWalletAddress(latest);
+        clearInterval(id);
+      }
+      if (attempts > 12) clearInterval(id); // ~6s max
+    }, 500);
+    return () => clearInterval(id);
+  }, [walletAddress, wallets, address]);
+
+  const addressLowerCase = (walletAddress || "").toLowerCase();
+
+  const effectiveAddress = walletAddress;
+
+  const hasWalletAvailable = Boolean(walletAddress);
 
   // initialize user if not in miniapp and ready and authenticated and wallets.length > 0
   useInitializeParticipant({
@@ -538,8 +556,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     setIsPreflighting(true);
     try {
       // Pre-checks: ensure wallet/auth context is present for the flow
-      const hasWallet = Boolean(effectiveAddress);
-      if (!hasWallet) {
+      if (!hasWalletAvailable) {
         setClaimMessage("Please connect your wallet to continue.");
         return;
       }
@@ -557,8 +574,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         const result = await refetchSnapshot();
         snapshot = (result.data ?? {}) as ParticipantSnapshot;
       } else {
-        const fidToUse: number | string = -1; // legacy web path
-        snapshot = await airdropApi.getParticipantSnapshot({ fid: fidToUse });
+        // const fidToUse: number | string = -1; // legacy web path
+        snapshot = await airdropApi.getParticipantSnapshot({
+          walletAddress: effectiveAddress || "",
+        });
       }
 
       // Reconcile local optimistic tasks (except hold-a0x which is governed by on-chain balance)
@@ -584,10 +603,10 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
       }
 
       setIsClaiming(true);
-      // Placeholder for airdrop claim logic
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Simulate submission to backend
+      await new Promise((resolve) => setTimeout(resolve, 800));
       setClaimMessage(
-        "Airdrop claim initiated! (This is a demo, no actual claim processed)"
+        "success:submitted" // consumed by modal copy in ClaimSection
       );
       setIsClaiming(false);
     } catch (error) {
@@ -650,6 +669,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 tasks={tasks}
                 onClaim={handleClaimAirdrop}
                 onRefresh={() => void handleClaimAirdrop(true)}
+                onDismissMessage={handleDismissMessage}
+                canSubmit={hasWalletAvailable || Boolean(user?.fid)}
               />
             </>
           ) : (

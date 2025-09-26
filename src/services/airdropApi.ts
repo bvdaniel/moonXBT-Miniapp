@@ -104,7 +104,7 @@ export const airdropApi = {
   },
 
   async initializeParticipant(data: {
-    fid: number;
+    fid?: number;
     username: string;
     displayName: string;
     pfpUrl: string;
@@ -130,14 +130,33 @@ export const airdropApi = {
 
   async getParticipantSnapshot(params: {
     fid?: number | string | null;
-    walletAddress?: string;
+    walletAddress?: string | null;
   }): Promise<ParticipantSnapshot> {
-    const { fid } = params || {};
+    const { fid, walletAddress } = params || {};
     if (fid === undefined || fid === null || fid === "") {
-      throw new Error("getParticipantSnapshot requires a valid fid");
+      if (
+        walletAddress === undefined ||
+        walletAddress === null ||
+        walletAddress === ""
+      ) {
+        throw new Error(
+          "getParticipantSnapshot requires a valid walletAddress or fid"
+        );
+      }
     }
 
-    const url = `/api/a0x-framework/airdrop/participant-exists?fid=${fid}`;
+    // join fid and walletAddress with &
+    const urlParams = new URLSearchParams();
+    if (fid) {
+      urlParams.append("fid", fid.toString());
+    }
+    if (walletAddress) {
+      urlParams.append("walletAddress", walletAddress);
+    }
+    urlParams.toString();
+
+    const url = `/api/a0x-framework/airdrop/participant-exists?${urlParams.toString()}`;
+
     try {
       return await fetchJson<ParticipantSnapshot>(url);
     } catch (err: unknown) {
@@ -161,16 +180,16 @@ export const airdropApi = {
 
     const body = shouldUseWebRoute
       ? {
-          id: data.walletAddress,
+          id: data.walletAddress.toLowerCase(),
           twitterUsername: data.twitterUsername,
           targetTwitterUsername: data.targetTwitterUsername,
-          walletAddress: data.walletAddress,
+          walletAddress: data.walletAddress.toLowerCase(),
         }
       : {
           fid: data.fid,
           twitterUsername: data.twitterUsername,
           targetTwitterUsername: data.targetTwitterUsername,
-          walletAddress: data.walletAddress,
+          walletAddress: data.walletAddress.toLowerCase(),
         };
 
     const response = await fetch(endpoint, {
@@ -212,7 +231,7 @@ export const airdropApi = {
     };
 
     if (!data.farcasterFid) {
-      body.id = data.walletAddress;
+      body.id = data.walletAddress.toLowerCase();
     } else {
       body.farcasterFid = data.farcasterFid;
     }

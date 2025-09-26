@@ -19,30 +19,38 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const fid = searchParams.get("fid");
+    const walletAddress = searchParams.get("walletAddress");
 
-    if (!fid) {
+    if (!(fid || walletAddress)) {
       return NextResponse.json(
         {
           success: false,
-          message: "Query parameter 'fid' is required.",
+          message: "Either 'fid' or 'walletAddress' parameter is required.",
         },
         { status: 400 }
       );
     }
 
-    const farcasterFid = parseInt(fid, 10);
-    if (isNaN(farcasterFid)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Query parameter 'fid' must be a valid number.",
-        },
-        { status: 400 }
-      );
+    const urlParams = new URLSearchParams();
+    if (fid) {
+      const farcasterFid = parseInt(fid, 10);
+      if (isNaN(farcasterFid)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Query parameter 'fid' must be a valid number.",
+          },
+          { status: 400 }
+        );
+      }
+      urlParams.append("fid", farcasterFid.toString());
+    }
+    if (walletAddress) {
+      urlParams.append("walletAddress", walletAddress);
     }
 
     const response = await axios.get(
-      `${A0X_AGENT_API_URL}/moonxbt/airdrop/participant-exists?fid=${farcasterFid}`
+      `${A0X_AGENT_API_URL}/moonxbt/airdrop/participant-exists?${urlParams.toString()}`
     );
 
     if (response.status !== 200) {

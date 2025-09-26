@@ -211,7 +211,7 @@ export default function TaskButtonRouter({
               | "zora"
               | "farcaster",
             {
-              farcasterFid: user?.fid || null,
+              farcasterFid: Number(userInfo?.fid || user?.fid) || null,
               username,
               targetUsername: task.targetUsername || "",
               walletAddress: addressLowerCase || "",

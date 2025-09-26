@@ -22,7 +22,7 @@ export function useInitializeParticipant({
       if (wallet) {
         try {
           await airdropApi.initializeParticipant({
-            fid: -1,
+            // fid: -1,
             username: `web-user-${wallet.address?.slice(0, 8)}`,
             displayName: `Web User ${wallet.address?.slice(0, 6)}...`,
             pfpUrl:

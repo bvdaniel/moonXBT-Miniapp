@@ -87,7 +87,15 @@ export default function TaskButtonRouter({
           <Button
             onClick={() => {
               if (task.url) {
-                window.open(task.url, "_blank");
+                const currentPoints =
+                  lastPointsRef.current !== null
+                    ? lastPointsRef.current
+                    : userPoints;
+                const ogImageUrl = `${window.location.origin}/api/og?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;
+                const twitterUrl = `${task.url}&url=${encodeURIComponent(
+                  ogImageUrl
+                )}`;
+                window.open(twitterUrl, "_blank");
                 updateTask(task.id, { isCompleted: true });
               }
             }}

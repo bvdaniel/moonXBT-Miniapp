@@ -210,12 +210,11 @@ export async function GET(request: Request) {
   const pfpUrl =
     searchParams.get("pfpUrl") || "https://i.ibb.co/QvFx17r6/logo.png";
 
-  // Get relevant avatars
+  // Get relevant avatars only for Farcaster shares
   const avatars = await getRelevantFollowers(moonxbtFid, Number(viewerFid));
 
-  console.log("avatars", avatars);
-
-  // Get MoonXBT's true follower count using the bulk endpoint
+  // Get MoonXBT's true follower count using the bulk endpoint (only for Farcaster shares)
+  let followerCount = 0;
   const bulkRes = await fetch(
     `https://api.neynar.com/v2/farcaster/user/bulk?fids=${moonxbtFid}`,
     {
@@ -227,43 +226,10 @@ export async function GET(request: Request) {
     }
   );
   const bulkData = await bulkRes.json();
-  // const mockBulkData = {
-  //   users: [
-  //     {
-  //       object: "user",
-  //       fid: 900682,
-  //       username: "ai420z",
-  //       display_name: "moonXBT",
-  //       pfp_url:
-  //         "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/ceeee346-c1bc-4044-4050-31472fcd5f00/rectcrop3",
-  //       custody_address: "0xf0d29d9366efad8aa03f1be212577b0fd5854197",
-  //       profile: { bio: { text: "Moonxbt.fun" } },
-  //       follower_count: 76,
-  //       following_count: 1,
-  //       verifications: ["0x65a33f508b550ed88e5970157323aaf04b4584e1"],
-  //       verified_addresses: {
-  //         eth_addresses: ["0x65a33f508b550ed88e5970157323aaf04b4584e1"],
-  //         sol_addresses: [],
-  //         primary: {
-  //           eth_address: "0x65a33f508b550ed88e5970157323aaf04b4584e1",
-  //           sol_address: null,
-  //         },
-  //       },
-  //       verified_accounts: [],
-  //       power_badge: false,
-  //       experimental: {
-  //         neynar_user_score: 0.62,
-  //         deprecation_notice:
-  //           "The `neynar_user_score` field under `experimental` will be deprecated after June 1, 2025, as it will be formally promoted to a stable field named `score` within the user object.",
-  //       },
-  //       score: 0.62,
-  //     },
-  //   ],
-  //   next: { cursor: null },
-  // };
+
   const users: NeynarUser[] = bulkData.users || [];
   // const users: NeynarUser[] = mockBulkData.users || [];
-  const followerCount = users[0]?.follower_count ?? 0;
+  followerCount = users[0]?.follower_count ?? 0;
 
   const imageResponseOptions = {
     width: 1500,
@@ -301,7 +267,7 @@ export async function GET(request: Request) {
           }}
           alt="MoonXBT OG Background"
         />
-        {/* Overlay avatars and count */}
+        {/* Overlay avatars and count - Farcaster profile */}
         <div
           style={{
             position: "absolute",
@@ -348,7 +314,7 @@ export async function GET(request: Request) {
             following
           </span>
         </div>
-        {/* User avatar and points placeholder */}
+        {/* Farcaster share - avatar and points */}
         <div
           style={{
             position: "absolute",

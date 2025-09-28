@@ -282,27 +282,25 @@ export async function GET(request: Request) {
           justifyContent: "center",
           background: siteUrl.includes("localhost")
             ? "black"
-            : "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            : "linear-gradient(135deg,#000 0%, #16213e 50%, #0f3460 100%)",
           fontFamily:
             "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}
       >
-        {/* Background image - only show if available */}
-        {siteUrl.includes("localhost") && (
-          <img
-            src={`${siteUrl}/opengraph-image.png`}
-            width={1500}
-            height={1000}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-            }}
-            alt="MoonXBT OG Background"
-          />
-        )}
+        <img
+          // src={`${siteUrl}/opengraph-image.png`}
+          src={`https://github.com/bvdaniel/moonXBT-Miniapp/blob/main/public/opengraph-image.png?raw=true`}
+          width={1500}
+          height={1000}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+          }}
+          alt="MoonXBT OG Background"
+        />
         {/* Overlay avatars and count */}
         <div
           style={{

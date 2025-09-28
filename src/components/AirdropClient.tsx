@@ -473,8 +473,8 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
   // Web auto-verification by wallet (if we have an address but no fid)
   const walletVerifyOnceRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isInMiniApp) return;
-    if (user?.fid) return;
+    // if (isInMiniApp) return;
+    // if (user?.fid) return;
     const farcasterTask = tasks.find((t) => t.id === TaskId.FollowFarcaster);
     if (!farcasterTask?.targetUsername) return;
     if (!effectiveAddress) return;
@@ -489,21 +489,23 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
 
         console.log("[Wallet auto-verification] data", data);
 
-        updateTask(TaskId.FollowFarcaster, {
-          isCompleted: data.isFollowing === true,
-          verificationError:
-            data.isFollowing === true
-              ? null
-              : "You're not following this account yet.",
-        });
+        if (!isInMiniApp) {
+          updateTask(TaskId.FollowFarcaster, {
+            isCompleted: data.isFollowing === true,
+            verificationError:
+              data.isFollowing === true
+                ? null
+                : "You're not following this account yet.",
+          });
 
-        updateTask(TaskId.FollowTwitter, {
-          isCompleted: data.tasks?.[TaskId.FollowTwitter]?.completed === true,
-          verificationError:
-            data.tasks?.[TaskId.FollowTwitter]?.completed === true
-              ? null
-              : "You're not following this account yet.",
-        });
+          updateTask(TaskId.FollowTwitter, {
+            isCompleted: data.tasks?.[TaskId.FollowTwitter]?.completed === true,
+            verificationError:
+              data.tasks?.[TaskId.FollowTwitter]?.completed === true
+                ? null
+                : "You're not following this account yet.",
+          });
+        }
 
         updateTask(TaskId.FollowInstagram, {
           isCompleted: data.tasks?.[TaskId.FollowInstagram]?.completed === true,

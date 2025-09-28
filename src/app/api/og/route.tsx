@@ -248,7 +248,7 @@ export async function GET(request: Request) {
           justifyContent: "center",
           background: siteUrl.includes("localhost")
             ? "black"
-            : "linear-gradient(135deg,#000 0%, #16213e 50%, #0f3460 100%)",
+            : "linear-gradient(135deg,#1a1a2e 0%, #16213e 50%, #0f3460 100%)",
           fontFamily:
             "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         }}

@@ -205,8 +205,8 @@ async function getRelevantFollowers(targetFid: number, viewerFid: number) {
 export async function GET(request: Request) {
   const moonxbtFid = 900682;
   const { searchParams } = new URL(request.url);
-  const viewerFid = searchParams.get("viewerFid") || "12785";
-  const points = searchParams.get("points") || "100";
+  const viewerFid = searchParams.get("viewerFid") || "900682";
+  const points = searchParams.get("points") || "10";
   const pfpUrl =
     searchParams.get("pfpUrl") || "https://i.ibb.co/QvFx17r6/logo.png";
 

@@ -430,38 +430,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     }
   }, [tokenBalanceData, updateTask]);
 
-  // Web flow: fetch snapshot once when we have an effective address (no miniapp fid)
-  const webSnapshotFetchedRef = useRef(false);
-  useEffect(() => {
-    if (isInMiniApp) return; // only for web
-    if (user?.fid) return; // mini app path handles its own
-    if (!effectiveAddress) return; // need an address (real or impersonated)
-    if (webSnapshotFetchedRef.current) return; // only run once
-    if (!tasks || tasks.length === 0) return; // wait until tasks are initialized
-
-    webSnapshotFetchedRef.current = true;
-    (async () => {
-      try {
-        // Skip participant-exists in impersonation path; initialization above should create the record
-        if (!impersonatedAddress) {
-          const snapshot = await airdropApi.getParticipantSnapshot({
-            walletAddress: effectiveAddress,
-          });
-          reconcileTasksFromSnapshot(tasks, snapshot.tasks);
-        }
-      } catch (error) {
-        console.error("[Web] Error fetching participant snapshot:", error);
-      }
-    })();
-  }, [
-    isInMiniApp,
-    user?.fid,
-    effectiveAddress,
-    tasks,
-    impersonatedAddress,
-    reconcileTasksFromSnapshot,
-  ]);
-
   const renderTaskButton = useCallback(
     (task: Task) => (
       <TaskButtonRouter

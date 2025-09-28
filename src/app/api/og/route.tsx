@@ -265,7 +265,7 @@ export async function GET(request: Request) {
   // const users: NeynarUser[] = mockBulkData.users || [];
   const followerCount = users[0]?.follower_count ?? 0;
 
-  const imageResponseOptions: any = {
+  const imageResponseOptions = {
     width: 1500,
     height: 1000,
   };

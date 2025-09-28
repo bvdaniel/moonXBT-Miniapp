@@ -28,8 +28,8 @@ export default function ShareMiniappButton({
 
         const result = await sdk.actions.composeCast({
           text: `I'm participating in moonXBT airdrop to get $A0X tokens, the first autonomous content creator on Base! I've earned ${currentPoints} points so far!`,
-                    embeds: [
-            `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}&pfpUrl=${user.pfp_url}&points=${currentPoints}`
+          embeds: [
+            `https://moon-xbt-miniapp.vercel.app/?sharedFid=${user.fid}&pfpUrl=${user.pfpUrl}&points=${currentPoints}`,
           ],
         });
 
@@ -46,7 +46,7 @@ export default function ShareMiniappButton({
       const currentPoints =
         lastPointsRef.current !== null ? lastPointsRef.current : userPoints;
       window.open(
-        `https://farcaster.xyz/~/compose?text=I'm%20participating%20in%20$moonXBT%20airdrop,%20the%20first%20autonomous%20content%20creator%20on%20Base!%20I've%20earned%20${currentPoints}%20points%20so%20far!`,
+        `https://farcaster.xyz/~/compose?text=I'm%20participating%20in%20$moonXBT%20airdrop%20to%20get%20$A0X%20tokens,%20the%20first%20autonomous%20content%20creator%20on%20Base!%20I've%20earned%20${currentPoints}%20points%20so%20far!`,
         "_blank"
       );
     }

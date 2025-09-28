@@ -27,28 +27,34 @@ export async function generateMetadata({
 }: {
   searchParams: SearchParams;
 }): Promise<Metadata> {
+  console.log("Generating metadata");
+  console.log(searchParams);
+  console.log("Generating metadata");
+
   const params = await searchParams;
   let rawFid = params.sharedFid;
   if (Array.isArray(rawFid)) {
     rawFid = rawFid[0];
   }
 
+  const pointsParam = params.points || "10";
+  let points = pointsParam ? parseInt(pointsParam as string, 10) : 10;
+
   const sharedFid = rawFid ? parseInt(rawFid, 10) : null;
   let initialUserInfo = null;
-  let initialPoints = 100;
   let sharedImage = null;
 
   if (sharedFid) {
     initialUserInfo = await getUserInfo(sharedFid);
-    initialPoints = initialUserInfo?.points || 100;
     sharedImage = initialUserInfo?.farcasterPfpUrl || null;
+    points = initialUserInfo?.points || points;
   }
 
   const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
   const frame = {
     version: "next",
-    imageUrl: `${appUrl}/api/og?points=${initialPoints}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
+    imageUrl: `${appUrl}/api/og?points=${points}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
       sharedImage || "https://i.ibb.co/QvFx17r6/logo.png"
     )}`,
     button: {
@@ -70,7 +76,7 @@ export async function generateMetadata({
       description: "Join MoonXBT and earn airdrop points",
       images: [
         {
-          url: `${appUrl}/api/og?points=${initialPoints}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
+          url: `${appUrl}/api/og?points=${points}&viewerFid=${sharedFid}&pfpUrl=${encodeURIComponent(
             sharedImage || "https://i.ibb.co/QvFx17r6/logo.png"
           )}`,
           width: 1500,

@@ -91,7 +91,7 @@ export default function TaskButtonRouter({
                   lastPointsRef.current !== null
                     ? lastPointsRef.current
                     : userPoints;
-                const ogImageUrl = `${window.location.origin}/api/og?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;
+                const ogImageUrl = `${window.location.origin}/api/og-page?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;
                 const twitterUrl = `${task.url}&url=${encodeURIComponent(
                   ogImageUrl
                 )}`;

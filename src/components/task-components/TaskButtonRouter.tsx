@@ -10,6 +10,7 @@ import { Task } from "@/hooks/useAirdropTasks";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 import { TaskId } from "@/constants/tasks";
 import type { UserContext } from "@farcaster/frame-core/dist/context";
+import { MutableRefObject } from "react";
 
 interface TaskButtonRouterProps {
   task: Task;
@@ -48,8 +49,6 @@ export default function TaskButtonRouter({
   hasAnyWallet,
   userFid,
   address,
-  lastPointsRef,
-  userPoints,
   updateTask,
   verifyTwitterFollow,
   handleRefreshVerification,
@@ -70,13 +69,23 @@ export default function TaskButtonRouter({
   }
 
   if (task.id === TaskId.ShareSocial) {
+    console.warn("[ShareSocial] user", userInfo);
+
+    // if user is null, or undefined, or has no fid, set the actions as disabled, and show a message
+    if (
+      userInfo === null ||
+      userInfo === undefined ||
+      userInfo.fid === undefined
+    ) {
+      return <></>;
+    }
+
     if (isInMiniApp) {
       return (
         <ShareMiniappButton
           task={task}
           user={user}
-          userPoints={userPoints}
-          lastPointsRef={lastPointsRef}
+          userPoints={userInfo?.points as unknown as number}
           onTaskUpdate={updateTask}
         />
       );
@@ -86,11 +95,10 @@ export default function TaskButtonRouter({
         <div className="flex items-center space-x-2">
           <Button
             onClick={() => {
+              console.warn("[ShareSocial] Share button clicked");
+              debugger;
               if (task.url) {
-                const currentPoints =
-                  lastPointsRef.current !== null
-                    ? lastPointsRef.current
-                    : userPoints;
+                const currentPoints = userInfo?.points as unknown as number;
                 const ogImageUrl = `${window.location.origin}/api/og-page?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;
                 const twitterUrl = `${task.url}&url=${encodeURIComponent(
                   ogImageUrl

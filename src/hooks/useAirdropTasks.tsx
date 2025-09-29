@@ -328,7 +328,7 @@ export const useAirdropTasks = (isInMiniApp: boolean = true) => {
           url: isInMiniApp
             ? undefined
             : `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                "🚀 Join the @moonXBT_ai airdrop! Complete tasks to earn your share of tokens 🌙✨\n\n#moonXBT #Airdrop #Crypto https://moonxbt.fun \n\n"
+                "🚀 Join the @moonXBT_ai airdrop! Complete tasks to earn your share of tokens 🌙✨\n\n#moonXBT #Airdrop #Crypto\n\n"
               )}`,
           icon: isInMiniApp ? (
             <MessageCircle className="w-4 h-4 text-purple-500" />

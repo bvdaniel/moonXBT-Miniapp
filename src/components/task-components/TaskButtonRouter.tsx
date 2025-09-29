@@ -10,7 +10,6 @@ import { Task } from "@/hooks/useAirdropTasks";
 import { airdropApi, type UserInfo } from "@/services/airdropApi";
 import { TaskId } from "@/constants/tasks";
 import type { UserContext } from "@farcaster/frame-core/dist/context";
-import { MutableRefObject } from "react";
 
 interface TaskButtonRouterProps {
   task: Task;
@@ -23,8 +22,6 @@ interface TaskButtonRouterProps {
   hasAnyWallet: boolean;
   userFid?: number;
   address?: string;
-  lastPointsRef: React.MutableRefObject<number | null>;
-  userPoints: number;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   verifyTwitterFollow: (
     fid: number | string | null,

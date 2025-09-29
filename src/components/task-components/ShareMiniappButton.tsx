@@ -39,7 +39,7 @@ export default function ShareMiniappButton({
       }
     } else {
       window.open(
-        `https://farcaster.xyz/~/compose?text=I'm%20participating%20in%20$moonXBT%20airdrop%20to%20get%20$A0X%20tokens,%20the%20first%20autonomous%20content%20creator%20on%20Base!%20I've%20earned%20${currentPoints}%20points%20so%20far!`,
+        `https://farcaster.xyz/~/compose?text=I'm%20participating%20in%20$moonXBT%20airdrop%20to%20get%20$A0X%20tokens,%20the%20first%20autonomous%20content%20creator%20on%20Base!%20I've%20earned%20${userPoints}%20points%20so%20far!`,
         "_blank"
       );
     }

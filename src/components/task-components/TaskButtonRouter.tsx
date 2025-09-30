@@ -92,8 +92,6 @@ export default function TaskButtonRouter({
         <div className="flex items-center space-x-2">
           <Button
             onClick={() => {
-              console.warn("[ShareSocial] Share button clicked");
-              debugger;
               if (task.url) {
                 const currentPoints = userInfo?.points as unknown as number;
                 const ogImageUrl = `${window.location.origin}/api/og-page?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;

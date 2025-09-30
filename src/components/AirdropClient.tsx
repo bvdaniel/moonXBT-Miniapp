@@ -443,8 +443,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         hasAnyWallet={isConnected || wallets.length > 0}
         userFid={user?.fid}
         address={address}
-        lastPointsRef={lastPointsRef}
-        userPoints={userPoints}
         updateTask={updateTask}
         verifyTwitterFollow={verifyTwitterFollow}
         handleRefreshVerification={handleRefreshVerification}

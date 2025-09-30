@@ -22,8 +22,6 @@ interface TaskButtonRouterProps {
   hasAnyWallet: boolean;
   userFid?: number;
   address?: string;
-  lastPointsRef: React.MutableRefObject<number | null>;
-  userPoints: number;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   verifyTwitterFollow: (
     fid: number | string | null,
@@ -48,8 +46,6 @@ export default function TaskButtonRouter({
   hasAnyWallet,
   userFid,
   address,
-  lastPointsRef,
-  userPoints,
   updateTask,
   verifyTwitterFollow,
   handleRefreshVerification,
@@ -70,13 +66,23 @@ export default function TaskButtonRouter({
   }
 
   if (task.id === TaskId.ShareSocial) {
+    console.warn("[ShareSocial] user", userInfo);
+
+    // if user is null, or undefined, or has no fid, set the actions as disabled, and show a message
+    if (
+      userInfo === null ||
+      userInfo === undefined ||
+      userInfo.fid === undefined
+    ) {
+      return <></>;
+    }
+
     if (isInMiniApp) {
       return (
         <ShareMiniappButton
           task={task}
           user={user}
-          userPoints={userPoints}
-          lastPointsRef={lastPointsRef}
+          userPoints={userInfo?.points as unknown as number}
           onTaskUpdate={updateTask}
         />
       );
@@ -87,10 +93,7 @@ export default function TaskButtonRouter({
           <Button
             onClick={() => {
               if (task.url) {
-                const currentPoints =
-                  lastPointsRef.current !== null
-                    ? lastPointsRef.current
-                    : userPoints;
+                const currentPoints = userInfo?.points as unknown as number;
                 const ogImageUrl = `${window.location.origin}/api/og-page?points=${currentPoints}&sharedFid=900682&pfpUrl=https%3A%2F%2Fi.ibb.co%2FQvFx17r6%2Flogo.png`;
                 const twitterUrl = `${task.url}&url=${encodeURIComponent(
                   ogImageUrl

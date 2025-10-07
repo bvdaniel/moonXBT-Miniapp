@@ -25,6 +25,10 @@ export interface FarcasterFollowResponse {
   twitterAccount: string | null;
   targetUsername: string;
   searchedUsername: string;
+  points?: number;
+  a0xPoints?: number;
+  otherTasksPoints?: number;
+  referralPoints?: number;
   tasks?: Record<string, ParticipantSnapshotTask>;
 }
 
@@ -39,6 +43,10 @@ export interface ParticipantSnapshot {
   username?: string;
   walletAddress?: string;
   isFollowing?: boolean;
+  points?: number;
+  a0xPoints?: number;
+  otherTasksPoints?: number;
+  referralPoints?: number;
   tasks?: Record<string, ParticipantSnapshotTask>;
 }
 

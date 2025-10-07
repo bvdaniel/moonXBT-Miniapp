@@ -18,7 +18,13 @@ export default function ShareMiniappButton({
   userPoints,
   onTaskUpdate,
 }: ShareMiniappButtonProps) {
+  console.log("[ShareMiniappButton] Rendering with userPoints:", userPoints);
+
   const handleShare = async () => {
+    console.log(
+      "[ShareMiniappButton] handleShare called with userPoints:",
+      userPoints
+    );
     if (user?.fid) {
       try {
         const result = await sdk.actions.composeCast({

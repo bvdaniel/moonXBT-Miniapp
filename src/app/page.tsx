@@ -40,6 +40,11 @@ export async function generateMetadata({
   const pointsParam = params.points || "10";
   let points = pointsParam ? parseInt(pointsParam as string, 10) : 10;
 
+  // Ensure points is a valid number, fallback to 10 if NaN
+  if (isNaN(points)) {
+    points = 10;
+  }
+
   const sharedFid = rawFid ? parseInt(rawFid, 10) : null;
   let initialUserInfo = null;
   let sharedImage = null;

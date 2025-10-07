@@ -32,6 +32,7 @@ interface TaskButtonRouterProps {
     onNewlyCompleted?: () => void
   ) => Promise<void>;
   handleRefreshVerification: () => Promise<void>;
+  userPoints: number;
   setUserInfo: React.Dispatch<React.SetStateAction<UserInfo | null>>;
 }
 
@@ -49,6 +50,7 @@ export default function TaskButtonRouter({
   updateTask,
   verifyTwitterFollow,
   handleRefreshVerification,
+  userPoints,
   setUserInfo,
 }: TaskButtonRouterProps) {
   if (task.socialNetwork === "a0x") {
@@ -78,11 +80,17 @@ export default function TaskButtonRouter({
     }
 
     if (isInMiniApp) {
+      console.log(
+        "[TaskButtonRouter] ShareSocial - userInfo?.points:",
+        userInfo?.points,
+        "userPoints:",
+        userPoints
+      );
       return (
         <ShareMiniappButton
           task={task}
           user={user}
-          userPoints={userInfo?.points as unknown as number}
+          userPoints={userInfo?.points ?? userPoints}
           onTaskUpdate={updateTask}
         />
       );

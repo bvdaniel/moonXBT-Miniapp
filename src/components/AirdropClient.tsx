@@ -256,7 +256,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         );
 
         setUserInfo(data);
-        setUserPoints(data.points || 0);
 
         // Initialize participant if we have the data
         if (data.fid && data.username) {
@@ -271,6 +270,41 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
               walletAddress: data.walletAddress || effectiveAddress || "",
               referredByFid: sharedFid || null,
             });
+
+            // Fetch participant snapshot to get actual points
+            try {
+              const snapshot = await airdropApi.getParticipantSnapshot({
+                fid: data.fid,
+                walletAddress: data.walletAddress || effectiveAddress || "",
+              });
+              console.log(
+                "[verifyFarcasterFollow] Participant snapshot:",
+                snapshot
+              );
+
+              // Update userInfo with points from snapshot
+              if (snapshot) {
+                console.log(
+                  "[verifyFarcasterFollow] Backend returned points:",
+                  snapshot.points
+                );
+
+                setUserInfo((prev) => ({
+                  ...prev,
+                  ...data,
+                  points: snapshot.points,
+                }));
+                setUserPoints(snapshot.points || 0);
+
+                // Reconcile tasks from snapshot
+                reconcileTasksFromSnapshot(tasks, snapshot.tasks);
+              }
+            } catch (snapshotError) {
+              console.error(
+                "Error fetching participant snapshot:",
+                snapshotError
+              );
+            }
           } catch (initError) {
             console.error("Error initializing participant:", initError);
           }
@@ -324,15 +358,6 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
                 ? null
                 : "Task not completed yet.",
             });
-
-            // Add points for completed tasks
-            if (
-              taskData.completed &&
-              !tasks.find((t) => t.id === taskId)?.isCompleted
-            ) {
-              const points = taskId === TaskId.ShareSocial ? 50 : 100;
-              setUserPoints((prev) => prev + points);
-            }
           }
         });
 
@@ -391,9 +416,18 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
     if (!isInMiniApp) return;
     if (!user?.fid) return;
     if (verifiedFidRef.current === user.fid) return;
+    // Skip if we have an effectiveAddress - wallet verification will handle it
+    if (effectiveAddress) {
+      console.log(
+        "[verifyFarcasterFollow] Skipping - wallet verification will handle it for address:",
+        effectiveAddress
+      );
+      verifiedFidRef.current = user.fid;
+      return;
+    }
     verifiedFidRef.current = user.fid;
     void verifyFarcasterFollow(user.fid);
-  }, [isInMiniApp, user?.fid, verifyFarcasterFollow]);
+  }, [isInMiniApp, user?.fid, effectiveAddress, verifyFarcasterFollow]);
 
   // Function to refresh verification
   const refreshingRef = useRef(false);
@@ -446,6 +480,7 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         updateTask={updateTask}
         verifyTwitterFollow={verifyTwitterFollow}
         handleRefreshVerification={handleRefreshVerification}
+        userPoints={userPoints}
         setUserInfo={setUserInfo}
       />
     ),
@@ -483,9 +518,14 @@ export default function AirdropClient({ sharedFid }: AirdropClientProps) {
         const data = await airdropApi.verifyFarcasterFollowByWalletAddress(
           effectiveAddress
         );
-        setUserInfo((prev) => ({ ...(prev || {}), ...data } as UserInfo));
-
         console.log("[Wallet auto-verification] data", data);
+        console.log(
+          "[Wallet auto-verification] Backend returned points:",
+          data.points
+        );
+
+        setUserInfo((prev) => ({ ...(prev || {}), ...data } as UserInfo));
+        setUserPoints(data.points || 0);
 
         if (!isInMiniApp) {
           updateTask(TaskId.FollowFarcaster, {

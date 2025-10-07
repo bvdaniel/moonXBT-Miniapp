@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/Button";
 import { Loader2 } from "lucide-react";
 import { type Task } from "@/hooks/useAirdropTasks";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useState } from "react";
 
 interface ClaimSectionProps {
   isClaiming: boolean;
@@ -26,6 +27,13 @@ export default function ClaimSection({
   onDismissMessage,
   canSubmit,
 }: ClaimSectionProps) {
+  const [showProcessingDialog, setShowProcessingDialog] = useState(false);
+
+  const handleSubmitClick = () => {
+    setShowProcessingDialog(true);
+    onClaim();
+  };
+
   return (
     <div className="w-full flex flex-col items-center mt-1">
       {/* Permanently disabled Claim button */}
@@ -35,7 +43,7 @@ export default function ClaimSection({
 
       {/* Active submit info button */}
       <Button
-        onClick={onClaim}
+        onClick={handleSubmitClick}
         disabled={isPreflighting || isClaiming || !canSubmit}
         className="w-full bg-green-600 hover:bg-green-700 mt-2"
       >
@@ -73,6 +81,38 @@ export default function ClaimSection({
           })}
         </ul>
       )}
+
+      {/* Processing Dialog */}
+      <Dialog.Root
+        open={showProcessingDialog}
+        onOpenChange={(open) => {
+          if (!open) setShowProcessingDialog(false);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 z-50" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 w-[90vw] max-w-sm -translate-x-1/2 -translate-y-1/2 bg-gray-900 text-white p-6 rounded shadow-lg z-50">
+            <Dialog.Title className="text-lg font-semibold mb-3 flex items-center gap-2">
+              Processing Your Submission 😻
+            </Dialog.Title>
+            <Dialog.Description className="text-sm text-gray-200 leading-relaxed">
+              We are updating our internal records and validating the data
+              onchain. This process can take up to 30 minutes for the
+              information to get updated. Please bear with us!
+            </Dialog.Description>
+            <div className="mt-4 flex justify-end">
+              <Dialog.Close asChild>
+                <Button
+                  onClick={() => setShowProcessingDialog(false)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Got it
+                </Button>
+              </Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
 
       {/* Success Modal */}
       <Dialog.Root
